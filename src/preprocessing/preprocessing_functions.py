@@ -9,8 +9,6 @@ def extract_features(frames, features: list):
     features.append("ground_truth")
     return frames[features]
 
-frames_rotate = extract_features(frames_all, ["left_index_x", "left_index_y"])
-
 def preprocessing_difference(frames, number_timestamps: int, number_shifts: int):
     m = int(frames.shape[0] / number_shifts - number_timestamps)
     n = frames.shape[1] - 1
@@ -33,12 +31,13 @@ def preprocessing_difference(frames, number_timestamps: int, number_shifts: int)
     ax.plot(X[0:, 1])
     ax.plot(X[0:, 0])
     ax.plot(y / 6)
-    #plt.show()
+    plt.show()
     return X, y
+
+frames_rotate = extract_features(frames_all, ["left_index_x", "left_index_y"])
 
 timestamps = 5
 shifts = 5
-
 X, y = preprocessing_difference(frames_rotate, timestamps, shifts)
 
 #X2, y2 = preprocessing_difference(frames_rotate, 3, 3)
