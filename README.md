@@ -10,6 +10,8 @@ Project for developing the final project
   - raw frames : csv files processed by mediapipe raw
   - labeled frames : labeled csv files with annotation txt files produced by ELAN
   - preprocessed frames : preprocessed csv files
+  
+&nbsp;
 
 - src :
   - preprocessing : scripts and notebooks for data exploration and functions for preprocessing the data so that it is ready to be put into the model
@@ -17,5 +19,9 @@ Project for developing the final project
   - evalutaion : functions for evaluating trained models (statistics, evtl. visializations)
   - slideshow : everything slide show related
   - pipline? (probably not needed)
+  
+&nbsp;
+
+- saved_runs : containing folders for groups of runs containing folders for individual runs containing meta_data.json files and .npy files of trained weights
   
 
