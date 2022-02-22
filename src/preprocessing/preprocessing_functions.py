@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import List, Tuple
 from enum import Enum
+import glob
 
 # preprocessing parameters
 
@@ -36,6 +37,13 @@ class Labels(Enum):
         # this is the notation of the one hot encoded ground truth columns in the dataframe
         return ['gt_' + label_abbreviation for label_abbreviation in ['idle', 'sr', 'sl', 'r']]
 
+
+class Preprocessing_parameters():
+    def __init__(self, mediapipe_columns_for_diff: List[str], num_shifts: int, num_timesteps: int, difference_mode: str) -> None:
+        self.mediapipe_colums_for_diff = mediapipe_columns_for_diff
+        self.num_shifts = num_shifts
+        self.num_timesteps = num_timesteps
+        self.difference_mode = difference_mode
 
 
 def extract_features(frames: pd.DataFrame, features: list) -> pd.DataFrame:
@@ -120,7 +128,7 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
         X = np.zeros((num_samples, num_features))
 
         # calcing all the consecutive diffs
-        diff_of_consecutive_rows = data[1:] - data[:-1, :] 
+        diff_of_consecutive_rows = data[1:] - data[:-1, :]
 
         # placing the diffs in X
         for i in range(num_samples):
@@ -128,7 +136,8 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
                                                num_shifts + num_differences_in_a_sample, :].reshape(1, -1)
 
         # creating the df
-        column_diff_names = [orig_column + "_diff" for orig_column in orig_columns]
+        column_diff_names = [orig_column +
+                             "_diff" for orig_column in orig_columns]
         X_df = pd.DataFrame(data=X, columns=[
                             column_diff_name + f"_{str(i)}" for column_diff_name in column_diff_names for i in range(num_differences_in_a_sample)])
 
@@ -156,7 +165,6 @@ def add_one_hot_encoding_to_df(y: np.array, df: pd.DataFrame = None) -> pd.DataF
             Defaults to None, which results in returning a new df
     """
 
-
     y_df = pd.DataFrame(
         data=y, columns=Labels.get_column_names(), dtype=np.int16)
     if df is not None:
@@ -181,7 +189,7 @@ def replace_str_label_by_one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     # note that this is not the y desired in the end, as the rows are not the samples
     y = np.identity(len(Labels), dtype=int)[
         df['ground_truth_int'].to_numpy(dtype=int)]
-        
+
     df = add_one_hot_encoding_to_df(y, df)
 
     df.drop(['ground_truth', 'ground_truth_int'], inplace=True, axis=1)
@@ -189,10 +197,11 @@ def replace_str_label_by_one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_X(df: pd.DataFrame, num_shifts:int, num_timesteps: int, differnece_mode: str) -> Tuple[np.array, pd.DataFrame]:
+def create_X(df: pd.DataFrame, num_shifts: int, num_timesteps: int, differnece_mode: str) -> Tuple[np.array, pd.DataFrame]:
     # evtl add fuctions for other features here
 
-    X, X_df = calc_differences(df.drop(Labels.get_column_names(), axis=1), num_timesteps, num_shifts,  differnece_mode)
+    X, X_df = calc_differences(df.drop(Labels.get_column_names(
+    ), axis=1), num_timesteps, num_shifts,  differnece_mode)
     return X, X_df
 
 
@@ -203,7 +212,8 @@ def create_y(df: pd.DataFrame, num_timesteps: int, num_shifts: int) -> Tuple[np.
     return y, y_df
 
 
-def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List[str], num_shifts: int, num_timesteps: int, difference_mode: str = 'one'):
+def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List[str], num_shifts: int, num_timesteps: int, difference_mode: str = 'one') \
+        -> Tuple[np.array, pd.DataFrame]:
     """Takes path of a labeled df and preprocesses it/ creates the features for the input of the neural network
 
     Args:
@@ -217,16 +227,32 @@ def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List
     """
     labeled_df = pd.read_csv(labeled_frame_file_path)
     df = extract_features(labeled_df, mediapipe_colums_for_diff)
-    del labeled_df
+    # del labeled_df
     # now the one hot encoding is added to the df and later take out in create y, which is kind of unnecessary, but this functionality might be usefull for something else
     df = replace_str_label_by_one_hot_encoding(df)
     X, X_df = create_X(df, num_shifts, num_timesteps, difference_mode)
     y, y_df = create_y(df, num_timesteps, num_shifts)
     nn_input = (X, y)
     nn_input_df = pd.concat([X_df, y_df], axis=1)
-    nn_input_df.to_csv('nn_input_test.csv')
 
     return nn_input, nn_input_df
+
+
+def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_folder_path: Path, preproc_params: Preprocessing_parameters):
+    """gets all '*_labeled.csv' files under the specified folder, does preprocessing with the specified parameters and saves it in the other specified folder.
+    Args:
+        labeled_frames_folder_path (Path): load folder topath
+        preprocessed_frames_folder_path (Path): to folder path
+    """
+    for labeled_csv_file_path in labeled_frames_folder_path.glob('*_labeled.csv'):
+        # TODO: change the proprocessing function (and the ones used by it) argument to a Preprocessing_parameters instance, if the need exists
+        _, nn_input_df = preprocessing(labeled_csv_file_path,
+                                       preproc_params.mediapipe_colums_for_diff,
+                                       preproc_params.num_shifts,
+                                       preproc_params.num_timesteps,
+                                       preproc_params.difference_mode)
+        nn_input_df.to_csv(preprocessed_frames_folder_path /
+                           labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
 
 
 # FILE_PATH = "../../data/preprocessed_frames/demo_video_csv_with_ground_truth_rotate.csv"
@@ -242,8 +268,14 @@ def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List
 # print(data.shape[0])
 
 if __name__ == '__main__':
-    FILE_PATH = r'data\labeled_frames\demo_video_csv_with_ground_truth_rotate.csv'
-    X, y = preprocessing(FILE_PATH, mediapipe_colums_for_diff,
-                         num_shifts=1, num_timesteps=4, difference_mode='every')
+    FILE_PATH = r'data\labeled_frames\demo_video_csv_with_ground_truth_rotate_labeled.csv'
+    nn_input, nn_input_df = preprocessing(FILE_PATH, mediapipe_colums_for_diff.copy(),
+                                          num_shifts=1, num_timesteps=4, difference_mode='every')
+    nn_input_df.to_csv('nn_input_test.csv')
+
+    preproc_params = Preprocessing_parameters(
+        mediapipe_colums_for_diff.copy(), num_shifts=2, num_timesteps=4, difference_mode='one')
+    handle_preprocessing(Path(r'data\labeled_frames'), Path(
+        r'data\preprocessed_frames'), preproc_params)
 
     print('done')
