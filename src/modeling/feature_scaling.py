@@ -9,10 +9,10 @@ class StandardScaler():
         # devision-by-zero errors; let's omit that:
         self.std[self.std == 0] = 0.00001
 
-    def transform(self, X):
+    def transform(self, X:np.array):
         return (X - self.mean) / self.std
 
-    def inverse_transform(self, X_scaled):
+    def inverse_transform(self, X_scaled:np.array):
         return X_scaled * self.std + self.mean
     
     def to_dict(self):
