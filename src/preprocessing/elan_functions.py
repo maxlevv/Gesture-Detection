@@ -18,7 +18,7 @@ def find_corresponding_raw_frame_to_elan_annot(raw_frames_folder_path: Path, com
 def add_elan_labels_to_frame(elan_annotation_folder_path: Path, raw_frames_folder_path: Path, labeled_frames_folder_path: Path):
     """goes through each '*_annot.txt' file in elan folder and searches a corresponding raw csv under the given path, adds the labels and saves the df and
     """
-    for elan_annoation_file_path in elan_annotation_folder_path.glob('*annot.txt'):
+    for elan_annoation_file_path in elan_annotation_folder_path.glob('**/*annot.txt'):
         common_datum_identifier = elan_annoation_file_path.name.replace(
             '_annot.txt', '')
         raw_frame_file_path = find_corresponding_raw_frame_to_elan_annot(
@@ -70,10 +70,12 @@ def do():
     elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\rotate_right')
     elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_left')
     elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_right')
+    elan_annotation_folder_path = Path(r'data\elan_annotations')
     raw_frames_folder_path = Path(r'data\raw_frames')
     labeled_frames_folder_path = Path(r'data\labeled_frames\rotate_right')
     labeled_frames_folder_path = Path(r'data\labeled_frames\swipe_left')
     labeled_frames_folder_path = Path(r'data\labeled_frames\swipe_right')
+    labeled_frames_folder_path = Path(r'data\labeled_frames')
 
     add_elan_labels_to_frame(elan_annotation_folder_path,
                              raw_frames_folder_path, labeled_frames_folder_path)

@@ -4,7 +4,7 @@ import mediapipe as mp
 from helpers import data_to_csv as dtc
 import time
 
-def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path):
+def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_image: bool):
     mp_pose = mp.solutions.pose
 
     # current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -25,7 +25,12 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path):
                 success, image = cap.read()
                 if not success:
                     break
-                image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
+
+                if flip_image:
+                    image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
+                else:
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                
                 image.flags.writeable = False
                 results = pose.process(image)
             
@@ -38,7 +43,7 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path):
 def testing():
     video_folder_path = Path(r'data\video_files')
     raw_frames_folder_path = Path(r'data\raw_frames')
-    video_to_csv(video_folder_path, raw_frames_folder_path)
+    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)
 
 
 def converting():
@@ -48,7 +53,7 @@ def converting():
     raw_frames_folder_path = Path(r'data\raw_frames\rotate_right')
     raw_frames_folder_path = Path(r'data\raw_frames\swipe_left')
     raw_frames_folder_path = Path(r'data\raw_frames\swipe_right')
-    video_to_csv(video_folder_path, raw_frames_folder_path)
+    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)
 
 
 if __name__ == '__main__':
