@@ -35,7 +35,21 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path):
         cap.release()
 
 
-if __name__ == '__main__':
+def testing():
     video_folder_path = Path(r'data\video_files')
     raw_frames_folder_path = Path(r'data\raw_frames')
     video_to_csv(video_folder_path, raw_frames_folder_path)
+
+
+def converting():
+    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\rotate_right')
+    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_left')
+    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_right')
+    raw_frames_folder_path = Path(r'data\raw_frames\rotate_right')
+    raw_frames_folder_path = Path(r'data\raw_frames\swipe_left')
+    raw_frames_folder_path = Path(r'data\raw_frames\swipe_right')
+    video_to_csv(video_folder_path, raw_frames_folder_path)
+
+
+if __name__ == '__main__':
+    converting()
