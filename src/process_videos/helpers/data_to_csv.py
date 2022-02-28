@@ -6,7 +6,7 @@ class CSVDataWriter:
     def __init__(self):
         self.frame_list = []
         self.timestamps = []
-        self.column_names = self.load_keypoint_mapping_from_file("./keypoint_mapping.yml")
+        self.column_names = self.load_keypoint_mapping_from_file("src\process_videos\keypoint_mapping.yml")
 
     def read_data(self, data, timestamp):
         frame = []
@@ -23,9 +23,12 @@ class CSVDataWriter:
 
     def to_csv(self, output_path):
         frames = pd.DataFrame(self.frame_list, columns=self.column_names, index=self.timestamps)
+        print(frames)
         frames.index.name = "timestamp"
         frames.index = frames.index.astype(int)
+        print(frames)
         frames.round(5).to_csv(output_path)
+        print(frames.round(5))
 
     def load_keypoint_mapping_from_file(self, file):
         with open(file, "r") as yaml_file:

@@ -1,7 +1,11 @@
 # src of theorie: http://ufldl.stanford.edu/tutorial/supervised/DebuggingGradientChecking/
+from __future__ import annotations
 import numpy as np
+from typing import Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from neural_network import FCNN
 
-def check_gradient(func, gradient, x_test):
+def check_gradient(func:Callable, gradient:Callable, x_test:np.array):
     """[summary]
 
     Args:
@@ -20,7 +24,7 @@ def check_gradient(func, gradient, x_test):
     return np.allclose(num_grad.round(4), g_x.round(4)), num_grad, g_x
 
 
-def get_loss_func_only_dependent_one_weight_matrix(net, example_X, example_Y_g, w_index):
+def get_loss_func_only_dependent_one_weight_matrix(net:FCNN, example_X:np.array(), example_Y_g:np.array(), w_index:int):
     def J(w):
         # put in w as a vector
         net.W[w_index] = w.reshape(*(net.W[w_index].shape))
@@ -32,7 +36,7 @@ def get_loss_func_only_dependent_one_weight_matrix(net, example_X, example_Y_g, 
     return J
 
 
-def get_loss_gradient_only_dependent_one_weight_matrix(net, example_X, example_Y_g, w_index):
+def get_loss_gradient_only_dependent_one_weight_matrix(net:FCNN, example_X:np.array(), example_Y_g:np.array, w_index:int):
     def d_J(w):
         net.W[w_index] = w.reshape(*(net.W[w_index].shape))
         x = example_X
@@ -43,12 +47,12 @@ def get_loss_gradient_only_dependent_one_weight_matrix(net, example_X, example_Y
     return d_J
 
 
-def print_gradients_to_compare(num_grads, net_grads):
+def print_gradients_to_compare(num_grads:np.array, net_grads:np.array):
     for net_grad, num_grad in zip(net_grads, num_grads):
         print(f"######\n{np.c_[net_grad.reshape(-1, 1), num_grad.reshape(-1, 1)]}")
     
 
-def check_gradient_of_neural_net(net, example_X, example_Y_g, verbose=False):
+def check_gradient_of_neural_net(net:FCNN, example_X:np.array, example_Y_g:np.array, verbose:bool=False):
         """check all the gradient matrices of a given neural net class, currently only for output > 1
 
         Args:

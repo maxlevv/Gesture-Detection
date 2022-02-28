@@ -59,7 +59,7 @@ class FCNN:
         self._init_loss_func(loss_func)
 
 
-    def check_for_init_inconsistencies(self, activation_funcs, loss_func):
+    def check_for_init_inconsistencies(self, activation_funcs:List[str], loss_func:str):
         if not len(activation_funcs) == len(self.layer_list):
             raise Exception(f'Not enough or too many activation functions specified! ' + \
                 f'{len(activation_funcs)} given, {len(self.layer_list)} required.')
@@ -70,7 +70,7 @@ class FCNN:
         if self.layer_list[-1] > 1 and not loss_func == 'categorical_cross_entropy':
             raise Exception(f'Multiple output neurons can only be handeled by categorical_cross_entropy loss')
 
-    def _init_activation_funcs(self, activation_funcs):
+    def _init_activation_funcs(self, activation_funcs:List[str]):
         for act_string in activation_funcs:
             self.activation_funcs.append(
                 self._activation_func_dict[act_string])
@@ -84,7 +84,7 @@ class FCNN:
             self.d_loss_func = self._loss_func_dict[loss_func_str + '_d']
     
 
-    def init_weights(self, W=None):
+    def init_weights(self, W:np.array=None):
 
         if W:
             self.W = W
@@ -107,7 +107,7 @@ class FCNN:
         self.loss = None
 
 
-    def check_and_correct_shapes(self, X, Y_g):
+    def check_and_correct_shapes(self, X:np.array, Y_g:np.array):
         self.check_forward_prop_requirements(X)
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
@@ -118,7 +118,7 @@ class FCNN:
         return Y_g
 
 
-    def check_forward_prop_requirements(self, X):
+    def check_forward_prop_requirements(self, X:np.array):
         """
         check the shapes of the input
         """
@@ -131,7 +131,7 @@ class FCNN:
                 raise Exception(f'W[{i}] does not match the specified architechture')
         
 
-    def forward_it(self, X):
+    def forward_it(self, X:np.array):
         """
         evtl kann mann hier mit dynamic initialization und exec() befehl iterativ einen String mit python code aufbauen sodass man 
         wie eigentlich gewünscht die auswertung ohne schleife in einer großen verketteten function durchführen kann
@@ -161,7 +161,7 @@ class FCNN:
         return o_list, z_list
 
 
-    def forward_prop(self, X):
+    def forward_prop(self, X:np.array):
         
         self.check_forward_prop_requirements(X)
 
@@ -172,7 +172,7 @@ class FCNN:
         self.loss = self.loss_func(self.O[-1].T, Y_g)
 
 
-    def backprop(self, Y_g):
+    def backprop(self, Y_g:np.array):
         """
         y_g: y groud truth
         """
@@ -227,7 +227,7 @@ class FCNN:
             self.W[i] = self.W[i] - self.lr * self.dW[i]
 
     
-    def train(self, X, Y_g, batch_size):
+    def train(self, X:np.array, Y_g:np.array, batch_size:int):
         # TODO: I dont know if it is necessary to shuffle new in every epoch or if it can be done once for every epoch
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
@@ -248,7 +248,7 @@ class FCNN:
             self.backprop(Y_g[batch_indices])
             self.update_weights()
 
-    def track_epoch(self, X, Y_g):
+    def track_epoch(self, X:np.array, Y_g:np.array):
         # calc loss over whole data
         self.clear_data_specific_parameters()
         self.forward_prop(X)
@@ -258,7 +258,7 @@ class FCNN:
         self.acc_hist.append(acc)
 
 
-    def fit(self, X, Y_g, lr, epochs, batch_size):
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
         # scaling the data with the specified scaler instance
@@ -271,7 +271,7 @@ class FCNN:
             self.track_epoch(X, Y_g)
     
 
-    def calc_stats(self, X, Y_g, Y=None, safe_val_acc=False):
+    def calc_stats(self, X:np.array, Y_g:np.array, Y:np.array=None, safe_val_acc:bool=False):
         """
         for classification problems -> Y_g needs to binary
         """
@@ -302,7 +302,9 @@ class FCNN:
         # fig.show()
         return fig
     
-    def save_run(self, save_runs_folder_path:Path, run_group_name:str, author, data_file_name, lr, batch_size, epochs, num_samples, description=None, name=None):
+    def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
+                 data_file_name:str, lr:float, batch_size:int, epochs:int, num_samples:int, 
+                 description:str=None, name:str=None):
         save_run(save_runs_folder_path, run_group_name, self, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
     
     @classmethod

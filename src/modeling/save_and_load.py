@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 #     for i, w in enumerate(neural_net.W):
 #         np.save(run_folder_path / f"w_{i}.npy", w)
 
-def save_run(save_runs_folder_path:Path, run_group_name, neural_net:FCNN, author, data_file_name, lr, batch_size, epochs, num_samples, description=None, name=None):
+def save_run(save_runs_folder_path:Path, run_group_name, neural_net:FCNN, author:str, data_file_name:str, 
+             lr:float, batch_size:int, epochs:int, num_samples:int, description:str=None, name:str=None):
     meta_data = MetaData.from_neural_net(neural_net, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
     save_meta_json_and_weights(neural_net, meta_data, save_runs_folder_path, run_group_name)
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-def softmax(z):
+def softmax(z:np.array):
         # z (n x d)
         e = np.exp(z) # (n x d)
         return e / e.sum(axis=0).reshape(1, -1)  # axis verändert von 1 auf 0
