@@ -177,9 +177,10 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
     for i in range(num_samples):
         window_start_index = i * num_shifts
         window_np = data[window_start_index: window_start_index + num_timesteps, :]
+        diff_window_np = window_np[1:, :] - window_np[:-1]
 
         # calc the cumulative sum over the whole window
-        cumsum = np.cumsum(window_np, axis=0)
+        cumsum = np.cumsum(diff_window_np, axis=0)
 
         # extract only the cumsums specified in the pattern
         cumsum_features = cumsum[np.array(summands_pattern, dtype=bool), :]
@@ -204,7 +205,7 @@ def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_
 
     data = ground_truth_df.to_numpy()
     for i in range(num_samples):
-        y[i, :] = data[i*num_shifts, :]
+        y[i, :] = data[i*num_shifts + num_timesteps-1, :]
 
     return y
 
@@ -332,9 +333,9 @@ if __name__ == '__main__':
     # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=2, num_timesteps=5, summands_pattern=[1, 0, 1, 0, 1], media_pipe_columns_for_sum=mediapipe_columns_for_sum)
+        num_shifts=1, num_timesteps=6, summands_pattern=[1, 0, 1, 0, 1], media_pipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    handle_preprocessing(Path(r'data\labeled_frames'), Path(
-        r'data\preprocessed_frames'), preproc_params)
+    handle_preprocessing(Path(r'data\labeled_frames\ready_to_train'), Path(
+        r'data\preprocessed_frames\test'), preproc_params)
 
     print('done')
