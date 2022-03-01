@@ -263,8 +263,10 @@ class FCNN:
         self.lr = lr
         # scaling the data with the specified scaler instance
         # TODO: does y_d need to be scaled here?
-        self.scaler.fit(X)
-        X = self.scaler.transform(X)
+        
+        # this sould be done elsewhere, as only train data goes into fit()
+        # self.scaler.fit(X)
+        # X = self.scaler.transform(X)
 
         for epoch in tqdm(range(epochs)):
             self.train(X, Y_g, batch_size)
