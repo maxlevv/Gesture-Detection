@@ -12,15 +12,17 @@ import glob
 # considering only the manitroy gestures (swipe right, left, rotation)
 
 mediapipe_colums_for_diff = [
-    "left_shoulder_x", "left_shoulder_y",
-    "right_shoulder_x", "right_shoulder_y",
+    # "left_shoulder_x", "left_shoulder_y",
+    # "right_shoulder_x", "right_shoulder_y",
     "left_elbow_x", "left_elbow_y",
     "right_elbow_x", "right_elbow_y",
     "left_wrist_x", "left_wrist_y",
     "right_wrist_x", "right_wrist_y",
-    "left_index_x", "left_index_y", "left_index_z",
-    "right_index_x", "right_index_y", "right_index_z"
+    # "left_index_x", "left_index_y", # "left_index_z",
+    # "right_index_x", "right_index_y", # "right_index_z"
 ]
+
+mediapipe_columns_for_sum = mediapipe_colums_for_diff
 
 
 class Labels(Enum):
@@ -39,15 +41,20 @@ class Labels(Enum):
 
 
 class Preprocessing_parameters():
-    def __init__(self, mediapipe_columns_for_diff: List[str], num_shifts: int, num_timesteps: int, difference_mode: str) -> None:
-        self.mediapipe_colums_for_diff = mediapipe_columns_for_diff
+    def __init__(self, num_shifts: int, num_timesteps: int, 
+                difference_mode: str = None, mediapipe_columns_for_diff: List[str] = None,
+                summands_pattern: List[int] = None, media_pipe_columns_for_sum: List[str] = None):
         self.num_shifts = num_shifts
         self.num_timesteps = num_timesteps
         self.difference_mode = difference_mode
+        self.mediapipe_colums_for_diff = mediapipe_columns_for_diff
+        self.summands_pattern = summands_pattern
+        self.mediapipe_columns_for_sum = media_pipe_columns_for_sum
 
 
 def extract_features(frames: pd.DataFrame, features: list) -> pd.DataFrame:
-    features.append("ground_truth")
+    # features = features.copy()
+    # features.append("ground_truth")
     return frames.loc[:, features]
 
 
@@ -78,7 +85,7 @@ def preprocessing_difference(frames, number_timestamps: int, number_shifts: int)
     return X, y
 
 
-def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, difference_mode: str) -> Tuple[np.array, pd.DataFrame]:
+def calc_differences(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
     """ Calculates the features given as differences from all the columns in df considering a shift of num_shifts
         after each difference and considering num_timesteps timesteps for each row in the output.
         Difference mode determines the way the differences are calculated, e.g. 'every' is adding all the differences between timesteps 
@@ -94,6 +101,9 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
         Tuple[np.array, pd.DataFrame]: result 
     """
 
+    num_timesteps = preproc_params.num_timesteps
+    num_shifts = preproc_params.num_shifts
+
     # necessary as otherwise df is a view and the drop affects the original df
     df = df.copy()
 
@@ -104,7 +114,7 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
     data = df.to_numpy()
     orig_columns = df.columns
 
-    if difference_mode == 'one':
+    if preproc_params.difference_mode == 'one':
         # diff between last and first of current sliding window
 
         num_features = data.shape[1]
@@ -118,7 +128,7 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
         X_df = pd.DataFrame(
             data=X, columns=[orig_column + "_diff" for orig_column in orig_columns])
 
-    elif difference_mode == 'every':
+    elif preproc_params.difference_mode == 'every':
         # diff between every element of the current slinding window
 
         # there are (num_timesteps - 1) differences
@@ -133,13 +143,55 @@ def calc_differences(df: pd.DataFrame, num_timesteps: int, num_shifts: int, diff
         # placing the diffs in X
         for i in range(num_samples):
             X[i, :] = diff_of_consecutive_rows[i*num_shifts: i *
-                                               num_shifts + num_differences_in_a_sample, :].reshape(1, -1)
+                                               num_shifts + num_differences_in_a_sample, :].flatten('F').reshape(1, -1)
 
         # creating the df
         column_diff_names = [orig_column +
                              "_diff" for orig_column in orig_columns]
         X_df = pd.DataFrame(data=X, columns=[
                             column_diff_name + f"_{str(i)}" for column_diff_name in column_diff_names for i in range(num_differences_in_a_sample)])
+
+    return X, X_df
+
+
+def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
+
+    num_timesteps = preproc_params.num_timesteps
+    num_shifts = preproc_params.num_shifts
+    summands_pattern = preproc_params.summands_pattern
+
+    # necessary as otherwise df is a view and the drop affects the original df
+    df = df.copy()
+
+    # number of samples in X
+    num_samples = math.floor(
+        (df.shape[0] - num_timesteps + num_shifts) / num_shifts)
+
+    data = df.to_numpy()
+    orig_columns = df.columns
+
+    num_features = data.shape[1] * sum(summands_pattern)
+
+    X = np.zeros((num_samples, num_features))
+
+    for i in range(num_samples):
+        window_start_index = i * num_shifts
+        window_np = data[window_start_index: window_start_index + num_timesteps, :]
+
+        # calc the cumulative sum over the whole window
+        cumsum = np.cumsum(window_np, axis=0)
+
+        # extract only the cumsums specified in the pattern
+        cumsum_features = cumsum[np.array(summands_pattern, dtype=bool), :]
+
+        # adding the features to X
+        X[i, :] = cumsum_features.flatten('F').reshape(1, -1)
+
+    # creating the df
+    column_cumsum_names = [orig_column +
+                            "_cumsum" for orig_column in orig_columns]
+    X_df = pd.DataFrame(data=X, columns=[
+                        column_cumsum_name + f"_{str(i)}" for column_cumsum_name in column_cumsum_names for i in range(sum(summands_pattern))])
 
     return X, X_df
 
@@ -197,23 +249,44 @@ def replace_str_label_by_one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_X(df: pd.DataFrame, num_shifts: int, num_timesteps: int, differnece_mode: str) -> Tuple[np.array, pd.DataFrame]:
+def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
+    # num_shifts: int, num_timesteps: int, difference_mode: str, summands_pattern: List[int]) -> Tuple[np.array, pd.DataFrame]:
     # evtl add fuctions for other features here
 
-    X, X_df = calc_differences(df.drop(Labels.get_column_names(
-    ), axis=1), num_timesteps, num_shifts,  differnece_mode)
-    return X, X_df
+    # number of samples in X
+    num_samples = math.floor(
+        (df.shape[0] - preproc_params.num_timesteps + preproc_params.num_shifts) / preproc_params.num_shifts)
+
+    if preproc_params.difference_mode:
+        df_for_diff = extract_features(df, preproc_params.mediapipe_colums_for_diff)
+
+        X_diff, X_diff_df = calc_differences(df_for_diff, preproc_params)
+    else:
+        X_diff, X_diff_df = np.array([]).reshape(num_samples, 0), None
+
+    if preproc_params.summands_pattern:
+        df_for_sum = extract_features(df, preproc_params.mediapipe_columns_for_sum)
+
+        X_sum, X_sum_df = cumulative_sum(df_for_sum, preproc_params)
+    else:
+        X_sum, X_sum_df = np.array([], shape=(num_samples, 0)), None 
+
+    return np.c_[X_diff, X_sum].round(4), pd.concat([X_diff_df, X_sum_df], axis=1).round(4)
 
 
-def create_y(df: pd.DataFrame, num_timesteps: int, num_shifts: int) -> Tuple[np.array, pd.DataFrame]:
+def create_y(df: pd.DataFrame, preproc_params : Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
     y = determine_label_from_ground_truth_vector(
-        df[Labels.get_column_names()], num_timesteps, num_shifts)
+        df[Labels.get_column_names()], preproc_params.num_timesteps, preproc_params.num_shifts)
     y_df = add_one_hot_encoding_to_df(y)
     return y, y_df
 
 
-def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List[str], num_shifts: int, num_timesteps: int, difference_mode: str = 'one') \
+def preprocessing(labeled_frame_file_path: Path, preproc_params: Preprocessing_parameters) \
         -> Tuple[np.array, pd.DataFrame]:
+        # num_shifts: int, num_timesteps: int,
+        # difference_mode: str = None, mediapipe_colums_for_diff: List[str] = None, 
+        # summands_pattern: List[int] = None, mediapipe_colums_for_sum: List[str] = None) \
+        
     """Takes path of a labeled df and preprocesses it/ creates the features for the input of the neural network
 
     Args:
@@ -225,13 +298,13 @@ def preprocessing(labeled_frame_file_path: Path, mediapipe_colums_for_diff: List
     Returns:
         _type_: _description_
     """
-    labeled_df = pd.read_csv(labeled_frame_file_path)
-    df = extract_features(labeled_df, mediapipe_colums_for_diff)
+    labeled_df = pd.read_csv(labeled_frame_file_path, sep=' *,', engine='python')
+    # df = extract_features(labeled_df, mediapipe_colums_for_diff)
     # del labeled_df
     # now the one hot encoding is added to the df and later take out in create y, which is kind of unnecessary, but this functionality might be usefull for something else
-    df = replace_str_label_by_one_hot_encoding(df)
-    X, X_df = create_X(df, num_shifts, num_timesteps, difference_mode)
-    y, y_df = create_y(df, num_timesteps, num_shifts)
+    df = replace_str_label_by_one_hot_encoding(labeled_df)
+    X, X_df = create_X(df, preproc_params)
+    y, y_df = create_y(df, preproc_params)
     nn_input = (X, y)
     nn_input_df = pd.concat([X_df, y_df], axis=1)
 
@@ -244,37 +317,23 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
         labeled_frames_folder_path (Path): load folder topath
         preprocessed_frames_folder_path (Path): to folder path
     """
-    for labeled_csv_file_path in labeled_frames_folder_path.glob('*_labeled.csv'):
-        # TODO: change the proprocessing function (and the ones used by it) argument to a Preprocessing_parameters instance, if the need exists
-        _, nn_input_df = preprocessing(labeled_csv_file_path,
-                                       preproc_params.mediapipe_colums_for_diff,
-                                       preproc_params.num_shifts,
-                                       preproc_params.num_timesteps,
-                                       preproc_params.difference_mode)
+    for labeled_csv_file_path in labeled_frames_folder_path.glob('**/*_labeled.csv'):
+        _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
+
         nn_input_df.to_csv(preprocessed_frames_folder_path /
                            labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
 
 
-# FILE_PATH = "../../data/preprocessed_frames/demo_video_csv_with_ground_truth_rotate.csv"
-# frames_all = pd.read_csv(FILE_PATH)
-# frames_rotate = extract_features(frames_all, ["left_index_x", "left_index_y"])
-
-# timestamps = 5
-# shifts = 5
-# X, y = preprocessing_difference(frames_rotate, timestamps, shifts)
-
-#X2, y2 = preprocessing_difference(frames_rotate, 3, 3)
-#data = np.concatenate((X, X2), axis=0)
-# print(data.shape[0])
 
 if __name__ == '__main__':
-    FILE_PATH = r'data\labeled_frames\demo_video_csv_with_ground_truth_rotate_labeled.csv'
-    nn_input, nn_input_df = preprocessing(FILE_PATH, mediapipe_colums_for_diff.copy(),
-                                          num_shifts=1, num_timesteps=4, difference_mode='every')
-    nn_input_df.to_csv('nn_input_test.csv')
+    # FILE_PATH = r'data\labeled_frames\demo_video_csv_with_ground_truth_rotate_labeled.csv'
+    # nn_input, nn_input_df = preprocessing(FILE_PATH, mediapipe_colums_for_diff.copy(),
+    #                                       num_shifts=1, num_timesteps=4, difference_mode='every')
+    # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        mediapipe_colums_for_diff.copy(), num_shifts=2, num_timesteps=4, difference_mode='one')
+        num_shifts=2, num_timesteps=5, summands_pattern=[1, 0, 1, 0, 1], media_pipe_columns_for_sum=mediapipe_columns_for_sum)
+
     handle_preprocessing(Path(r'data\labeled_frames'), Path(
         r'data\preprocessed_frames'), preproc_params)
 
