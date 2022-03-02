@@ -67,15 +67,9 @@ def test():
 
 
 def do():
-    elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\rotate_right')
-    elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_left')
-    elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_right')
-    elan_annotation_folder_path = Path(r'data\elan_annotations')
-    raw_frames_folder_path = Path(r'data\raw_frames')
-    labeled_frames_folder_path = Path(r'data\labeled_frames\rotate_right')
-    labeled_frames_folder_path = Path(r'data\labeled_frames\swipe_left')
-    labeled_frames_folder_path = Path(r'data\labeled_frames\swipe_right')
-    labeled_frames_folder_path = Path(r'data\labeled_frames')
+    elan_annotation_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\elan')
+    raw_frames_folder_path = Path(r'..\..\data\raw_frames')
+    labeled_frames_folder_path = Path(r'..\..\data\labeled_frames')
 
     add_elan_labels_to_frame(elan_annotation_folder_path,
                              raw_frames_folder_path, labeled_frames_folder_path)

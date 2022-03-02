@@ -269,7 +269,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
 
         X_sum, X_sum_df = cumulative_sum(df_for_sum, preproc_params)
     else:
-        X_sum, X_sum_df = np.array([], shape=(num_samples, 0)), None 
+        X_sum, X_sum_df = np.array([]).reshape(num_samples, 0), None
 
     return np.c_[X_diff, X_sum].round(4), pd.concat([X_diff_df, X_sum_df], axis=1).round(4)
 
@@ -326,15 +326,15 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
 
 
 if __name__ == '__main__':
-    # FILE_PATH = r'data\labeled_frames\demo_video_csv_with_ground_truth_rotate_labeled.csv'
-    # nn_input, nn_input_df = preprocessing(FILE_PATH, mediapipe_colums_for_diff.copy(),
-    #                                       num_shifts=1, num_timesteps=4, difference_mode='every')
+
     # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=2, num_timesteps=5, summands_pattern=[1, 0, 1, 0, 1], media_pipe_columns_for_sum=mediapipe_columns_for_sum)
+        num_shifts=2, num_timesteps=5, difference_mode="one",
+        mediapipe_columns_for_diff=mediapipe_colums_for_diff)
+    LABEL_PATH = Path("..\..\data\labeled_frames")
+    PREPROC_PATH = Path(r"..\..\data\preprocessed_frames")
 
-    handle_preprocessing(Path(r'data\labeled_frames'), Path(
-        r'data\preprocessed_frames'), preproc_params)
+    handle_preprocessing(LABEL_PATH, PREPROC_PATH, preproc_params)
 
     print('done')
