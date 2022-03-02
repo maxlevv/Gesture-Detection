@@ -18,7 +18,7 @@ def do_train_run(preproc_folder_path: Path):
         if df is None:
             df = next_df
         else:
-            pd.concat([df, next_df], axis=0)
+            df = pd.concat([df, next_df], axis=0)
     
     y = df[Labels.get_column_names()].to_numpy()
     X = df.drop(Labels.get_column_names(), axis=1).to_numpy()
