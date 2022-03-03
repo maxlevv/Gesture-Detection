@@ -4,12 +4,12 @@ from neural_network import FCNN
 from feature_scaling import StandardScaler
 sys.path.append(r"C:\Users\Max\PycharmProjects\ml_dev_repo\src")
 from src.preprocessing import preprocessing_functions as pf
+from src.evaluation import metrics
 
 
-FILE_PATH = "../../data/preprocessed_frames/demo_video_csv_with_ground_truth_rotate.csv"
+FILE_PATH = "../../data/preprocessed_frames/02-25_max_rotate_right_2022-02-28_18-52-43_preproc.csv"
 frames_all = pd.read_csv(FILE_PATH)
 
-frames = pf.extract_features(frames_all, ["left_index_x", "left_index_y", "left_wrist_x", "left_wrist_y"])
 X, y = pf.preprocessing_difference(frames, number_timestamps=5, number_shifts=5)
 
 def test_neural_net(data, ground_truth):
@@ -25,5 +25,8 @@ def test_neural_net(data, ground_truth):
 
     return my_net
 
-test_net = test_neural_net(X, y)
+#test_net = test_neural_net(X, y)
 print(test_net.loss_hist[-1])
+
+
+metrics.accuracy()
