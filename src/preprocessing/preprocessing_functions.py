@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Tuple
 from enum import Enum
 import glob
+from tqdm import tqdm
 
 # preprocessing parameters
 
@@ -197,10 +198,23 @@ def correct_angle_boundary_diff(diff_np: np.array):
 
     return diff_np
 
-def calc_angle_diff(angle_np: np.array, window_start_index: int, num_timesteps: int):
+
+def scale_angle_diff(angle_diff_np: np.array, window_start_index: int, num_timesteps: int, df, side: str):
+    if side == 'right':
+        r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'right_forearm_r'].to_numpy()
+    elif side == 'left':
+        r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'left_forearm_r'].to_numpy()
+    
+    r_mid = (r[1:] + r[:-1]) / 2
+    r_mid_scaled = scale_to_body_size_and_dist_to_camera(r_mid, df.iloc[window_start_index: window_start_index + num_timesteps - 1, :])
+    return angle_diff_np * np.power(r_mid_scaled, 6) * 100
+
+
+def calc_angle_diff(angle_np: np.array, window_start_index: int, num_timesteps: int, df: pd.DataFrame, side: str):
     angle_diff =  angle_np[window_start_index + 1: window_start_index + num_timesteps] - \
                 angle_np[window_start_index: window_start_index + num_timesteps - 1]
-    return correct_angle_boundary_diff(diff_np=angle_diff)
+    angle_diff = correct_angle_boundary_diff(angle_diff)
+    return scale_angle_diff(angle_diff, window_start_index, num_timesteps, df, side)
 
 
 def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
@@ -246,11 +260,11 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
         diff_window_np = window_np[1:, :] - window_np[:-1, :]
 
         # apply scaling to diff here, as the angle should not be scaled
-        diff_window_np = scale_to_body_size_and_dist_to_camera(diff_window_np, df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
+        # diff_window_np = scale_to_body_size_and_dist_to_camera(diff_window_np, df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
 
         if angle_involved:
-            right_forearm_angle_diff = calc_angle_diff(right_forearm_angle, window_start_index, num_timesteps)
-            left_forearm_angle_diff = calc_angle_diff(left_forearm_angle, window_start_index, num_timesteps)
+            right_forearm_angle_diff = calc_angle_diff(right_forearm_angle, window_start_index, num_timesteps, df, side='right')
+            left_forearm_angle_diff = calc_angle_diff(left_forearm_angle, window_start_index, num_timesteps, df, side='left')
         
             diff_window_np = np.c_[diff_window_np, right_forearm_angle_diff, left_forearm_angle_diff]
 
@@ -262,6 +276,9 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
         # adding the features to X
         X[i, :] = cumsum_features.flatten('F').reshape(1, -1)
+
+        # apply scaling to diff here, as the angle is now multiplied by projected wrist to elbow dist, which needs to be scaled
+        X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
 
 
     # creating the df
@@ -289,7 +306,10 @@ def calc_forearm_angle(df: pd.DataFrame):
     angle_np = np.arctan2( forearm_vector_y, forearm_vector_x )
     angle_np[np.where(angle_np < 0)[0]] = angle_np[np.where(angle_np < 0)[0]] + 2 * np.pi
 
+    r = np.sqrt(np.power(forearm_vector_x, 2) + np.power(forearm_vector_y, 2))
+
     df['right_forearm_angle'] = angle_np
+    df['right_forearm_r'] = r
 
     left_wrist_x = df['left_wrist_x'].to_numpy()
     left_wrist_y = df['left_wrist_y'].to_numpy()
@@ -303,8 +323,11 @@ def calc_forearm_angle(df: pd.DataFrame):
     # calc angle with only positive angles
     angle_np = np.arctan2( forearm_vector_y, forearm_vector_x )
     angle_np[np.where(angle_np < 0)[0]] = angle_np[np.where(angle_np < 0)[0]] + 2 * np.pi
+
+    r = np.sqrt(np.power(forearm_vector_x, 2) + np.power(forearm_vector_y, 2))
     
     df['left_forearm_angle'] = angle_np
+    df['left_forearm_r'] = r
 
     return df
 
@@ -376,7 +399,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
 
         # add the angle names to the lists so that diff and cumsum is also applied to it
         preproc_params.add_new_columns_to_column_lists(
-            ['right_forearm_angle', 'left_forearm_angle'])
+            ['right_forearm_angle', 'left_forearm_angle', 'right_forearm_r', 'left_forearm_r'])
 
     if preproc_params.difference_mode:
         X_diff, X_diff_df = calc_differences(df, preproc_params)
@@ -434,7 +457,7 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
         labeled_frames_folder_path (Path): load folder topath
         preprocessed_frames_folder_path (Path): to folder path
     """
-    for labeled_csv_file_path in labeled_frames_folder_path.glob('**/*_labeled.csv'):
+    for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob('**/*_labeled.csv')):
         _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
         nn_input_df.to_csv(preprocessed_frames_folder_path /
@@ -452,7 +475,7 @@ if __name__ == '__main__':
         num_shifts=1, num_timesteps=7, # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff, 
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-        r'../../data\preprocessed_frames\with_angle'), preproc_params)
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\rotate_right'), Path(
+        r'../../data\preprocessed_frames\scaled_angle'), preproc_params)
 
     print('done')
