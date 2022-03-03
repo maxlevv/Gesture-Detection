@@ -34,7 +34,7 @@ class Labels(Enum):
 
     def get_label_list() -> List[str]:
         # currently not used
-        return ['idle', 'swipe_right', 'swipe_left', 'rotate']
+        return [str(label.name) for label in Labels]
 
     def get_column_names() -> List[str]:
         # this is the notation of the one hot encoded ground truth columns in the dataframe
@@ -475,7 +475,7 @@ if __name__ == '__main__':
         num_shifts=1, num_timesteps=7, # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff, 
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\rotate_right'), Path(
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
         r'../../data\preprocessed_frames\scaled_angle'), preproc_params)
 
     print('done')

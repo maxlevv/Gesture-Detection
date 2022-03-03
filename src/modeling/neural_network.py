@@ -8,6 +8,7 @@ from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_ent
 from activation_functions import softmax, sigmoid, sigmoid_d
 from feature_scaling import StandardScaler
 from save_and_load import save_run, load_run
+from evaluation.metrics import calc_metrics
 
 
 
@@ -303,7 +304,14 @@ class FCNN:
         axes[1].plot(self.acc_hist)
         # fig.show()
         return fig
+
+
+    def calc_metrics(self, X: np.array, y_g: np.array):
+        self.forward_prop(X)
+        y = self.O[-1].T
+        calc_metrics(y, y_g)
     
+
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
                  data_file_name:str, lr:float, batch_size:int, epochs:int, num_samples:int, 
                  description:str=None, name:str=None):
