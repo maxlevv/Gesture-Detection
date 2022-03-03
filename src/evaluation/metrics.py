@@ -1,14 +1,16 @@
 import numpy as np
-np.seterr(all="ignore")
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def accuracy(h, y):
+
+def accuracy(h: np.array, y: np.array):
     return (np.round(h) == y).all(axis=1).sum() / y.shape[0]
 
 
-def calc_confusion_matrix(h, y):
+def calc_confusion_matrix(h: np.array, y: np.array):
+    if np.shape(h) != np.shape(y):
+        raise Exception("ground truth vector y and hypothesis h are not the same size")
+
     n = y.shape[1]
     matrix = np.zeros(shape=(n, n), dtype='int')
     for i in range(n):
@@ -19,46 +21,27 @@ def calc_confusion_matrix(h, y):
     return matrix
 
 
-def print_confusion_matrix(h, y):
-    matrix = calc_confusion_matrix(h, y)   # Oder übergeben als Parameter
+def print_confusion_matrix(confusion_matrix: np.array):
 
     fig, ax = plt.subplots(figsize=(10, 8))
-    values = np.array([])
-    sns.heatmap(matrix, annot=matrix , fmt="", ax=ax)
+
+    sns.heatmap(confusion_matrix, annot=confusion_matrix , fmt="", ax=ax)
     ax.set_xlabel("ground truth")
     ax.set_ylabel("predicted")
     ax.set_title("confusion matrix")
     fig.show()
 
-
-def precision(confusion_matrix, attribute: int):
+# attribute Auswahl als Integer entsprechend der Nummerierung der Label in der Klasse preprocessing_functions.Labels
+def precision(confusion_matrix: np.array, attribute: int):
     return confusion_matrix[attribute, attribute] / confusion_matrix[attribute,:].sum()
 
 
-def recall(confusion_matrix, attribute: int):
+def recall(confusion_matrix: np.array, attribute: int):
     return confusion_matrix[attribute, attribute] / confusion_matrix[:,attribute].sum()
 
 
-def f1_score(confusion_matrix, attribute: int):
+def f1_score(confusion_matrix: np.array, attribute: int):
     prec = precision(confusion_matrix, attribute)
     rec = recall(confusion_matrix, attribute)
     score = 2 * (prec * rec) / (prec + rec)
     return score
-
-
-h = np.array([[0.9, 0.1, 0],
-              [0, 1, 0],
-              [0.7, 0.2, 0.1],
-              [1, 0, 0]])
-
-y = np.array([[1, 0, 0],
-              [0, 0, 1],
-              [1, 0, 0],
-              [0, 1, 0]])
-
-
-X = calc_confusion_matrix(h, y)
-print(precision(X, 0))
-print(recall(X, 0))
-print(f1_score(X, 0))
-print_confusion_matrix(h, y)
