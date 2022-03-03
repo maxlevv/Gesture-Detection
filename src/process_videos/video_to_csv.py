@@ -5,14 +5,18 @@ from helpers import data_to_csv as dtc
 import time
 
 def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_image: bool):
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
     mp_pose = mp.solutions.pose
 
-    # current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+    show_video = True
+
+    current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
 
     for video_file_path in video_folder_path.glob('*.mp4'):
         cap = cv2.VideoCapture(str(video_file_path))
 
-        result_csv_filename = raw_frames_folder_path / f"{video_file_path.name.replace('.mp4', '_')}_raw.csv"
+        result_csv_filename = raw_frames_folder_path / f"{video_file_path.name.replace('.mp4', '_')}{current_time}_raw.csv"
 
         csv_writer = dtc.CSVDataWriter()
         frame_count = 0
@@ -33,6 +37,16 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
                 
                 image.flags.writeable = False
                 results = pose.process(image)
+
+                if show_video:
+                    image.flags.writeable = True
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                              landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+                    cv2.imshow('MediaPipe Pose', image)
+
+                if cv2.waitKey(5) & 0xFF == 27:
+                    break
             
                 csv_writer.read_data(data=results.pose_landmarks, timestamp=cap.get(cv2.CAP_PROP_POS_MSEC))
         
@@ -41,19 +55,19 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
 
 
 def testing():
-    video_folder_path = Path(r'data\video_files')
-    raw_frames_folder_path = Path(r'data\raw_frames')
+    video_folder_path = Path(r'C:\Users\Max\Documents\Master Würzburg\Machine Learning\final-project-getting-started\demo_data')
+    raw_frames_folder_path = Path(r'..\..\data\raw_frames')
     video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)
 
 
 def converting():
-    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\rotate_right')
-    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_left')
-    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\swipe_right')
-    raw_frames_folder_path = Path(r'data\raw_frames\rotate_right')
-    raw_frames_folder_path = Path(r'data\raw_frames\swipe_left')
-    raw_frames_folder_path = Path(r'data\raw_frames\swipe_right')
-    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)
+    #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\rotate_right')
+    #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_right')
+    video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_left')
+    #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
+    #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
+    raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_left')
+    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
 
 
 if __name__ == '__main__':
