@@ -5,7 +5,7 @@ from pathlib import Path
 from gradient_checking import check_gradient, check_gradient_of_neural_net
 from tqdm import tqdm
 from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
-from activation_functions import softmax, sigmoid, sigmoid_d
+from activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
 from feature_scaling import StandardScaler
 from save_and_load import save_run, load_run
 from evaluation.metrics import calc_metrics
@@ -45,6 +45,10 @@ class FCNN:
             'sigmoid': sigmoid,
             'sigmoid_d': sigmoid_d,
             'softmax' : softmax,
+            'relu': relu,
+            'relu_d': relu_d,
+            'leaky_relu': leaky_relu,
+            'leaky_relu_d': leaky_relu_d,
         }
 
         self._loss_func_dict = {

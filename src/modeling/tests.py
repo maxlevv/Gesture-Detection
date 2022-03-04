@@ -7,7 +7,7 @@ from feature_scaling import StandardScaler
 from metaData import MetaData
 
 def test_neural_net():
-    my_net = FCNN(4, [3, 2, 2], [1, 1, 1], ['sigmoid']
+    my_net = FCNN(4, [3, 2, 2], [1, 1, 1], ['relu']
                     * 2 + ['softmax'], loss_func='categorical_cross_entropy', scaler=StandardScaler())
     my_net.init_weights()
     
@@ -75,9 +75,9 @@ def test_construct_MetaData_instance_from_dict():
 
 
 if __name__ == '__main__':
-    # test_neural_net()
+    test_neural_net()
     # test_save_run()
     # test_construct_MetaData_instance_from_dict()
     # test_FCNN_save_run()
-    test_FCNN_load_run()
+    # test_FCNN_load_run()
     print('done')
