@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from preprocessing.preprocessing_functions import Labels
 
 
 def accuracy(h: np.array, y: np.array):
@@ -51,4 +53,26 @@ def f1_score(confusion_matrix: np.array, attribute: int):
     rec = recall(confusion_matrix, attribute)
     score = 2 * (prec * rec) / (prec + rec)
     return score
+
+def calc_metrics(h: np.array, y: np.array):
+
+    # accuracy
+
+    conf_matrix = calc_confusion_matrix(h, y)
+    print_confusion_matrix(conf_matrix)
+    f1_scores = []
+    precisions = []
+    recalls = []
+    for label in Labels:
+        f1_scores.append(f1_score(conf_matrix, label.value))
+        precisions.append(precision(conf_matrix, label.value))
+        recalls.append(recall(conf_matrix, label.value))
+
+    df = pd.DataFrame(columns=Labels.get_label_list(), index=['f1_score', 'precision', 'recall'])
+    df.loc['f1_score', :] = f1_scores
+    df.loc['precision', :] = precisions
+    df.loc['recall', :] = recalls
+
+    print(df)
+
 
