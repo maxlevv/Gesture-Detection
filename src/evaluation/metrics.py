@@ -15,9 +15,15 @@ def calc_confusion_matrix(h: np.array, y: np.array):
 
     n = y.shape[1]
     matrix = np.zeros(shape=(n, n), dtype='int')
+
+    # for each row set the maximal value to one and the rest to zero
+    # instead of h.round()
+    h_onehot = np.zeros_like(h)
+    h_onehot[np.arange(len(h)), h.argmax(axis=1)] = 1
+
     for i in range(n):
         for j in range(n):
-            counter = ((h.round()[:,i] == 1) & (y[:,j]) == 1).sum()
+            counter = ((h_onehot[:,i] == 1) & (y[:,j]) == 1).sum()
             matrix[i,j] = counter
 
     return matrix
