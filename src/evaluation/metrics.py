@@ -27,7 +27,9 @@ def print_confusion_matrix(confusion_matrix: np.array):
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    sns.heatmap(confusion_matrix, annot=confusion_matrix , fmt="", ax=ax)
+    confusion_df = pd.DataFrame(data=confusion_matrix, columns=Labels.get_label_list(), index=Labels.get_label_list())
+
+    sns.heatmap(confusion_df, annot=confusion_matrix , fmt="", ax=ax)
     ax.set_xlabel("ground truth")
     ax.set_ylabel("predicted")
     ax.set_title("confusion matrix")
@@ -47,6 +49,7 @@ def f1_score(confusion_matrix: np.array, attribute: int):
     rec = recall(confusion_matrix, attribute)
     score = 2 * (prec * rec) / (prec + rec)
     return score
+
 
 def calc_metrics(h: np.array, y: np.array):
 
