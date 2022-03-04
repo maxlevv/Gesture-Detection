@@ -226,7 +226,7 @@ class FCNN:
                     dW = dW * self.d_activation_funcs[i](self.Z[i].T)
 
                 self.dW.insert(0,
-                               np.sum(     # changed from mean
+                               np.mean(     # changed from mean
                                    dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
                                    axis=2))  # (n_(i+1) x n_i x b)
             else:
@@ -240,7 +240,7 @@ class FCNN:
                 # performing the last muliplication with the O values and summing (was averaging in a earlier verison) over the gradients 
                 # in the batch
                 self.dW.insert(0,
-                               np.sum(     # changed from mean
+                               np.mean(     # changed from mean
                                    dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
                                    axis=2))
 

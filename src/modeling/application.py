@@ -85,6 +85,8 @@ def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: P
     neural_net.calc_metrics(X_train, y_train)
     neural_net.calc_metrics(X_val, y_val)
 
+    print("done")
+
 
 if __name__ == '__main__':
     # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
