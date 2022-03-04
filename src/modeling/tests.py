@@ -29,7 +29,7 @@ def test_neural_net():
 
     
     my_net.clear_data_specific_parameters()
-    my_net.fit(X, Y_g, lr=0.01, epochs=800, batch_size=10)
+    my_net.fit(X, Y_g, lr=0.01, epochs=800, batch_size=10, optimizer='adam')
     my_net.clear_data_specific_parameters()
     
     my_net.calc_stats(X, Y_g)

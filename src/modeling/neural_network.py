@@ -41,6 +41,13 @@ class FCNN:
         # self.layer_output_funcs = []    # functions to calcualte the output of each layer
         self.scaler = scaler     # instance of a class with methods fit(), transform() like in notebook 5
 
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
         self._activation_func_dict = {
             'sigmoid': sigmoid,
             'sigmoid_d': sigmoid_d,
@@ -87,6 +94,17 @@ class FCNN:
         self.loss_func = self._loss_func_dict[loss_func_str]
         if not loss_func_str == 'categorical_cross_entropy':
             self.d_loss_func = self._loss_func_dict[loss_func_str + '_d']
+    
+    def _init_adam_parameters(self):
+        if len(self.W) == 0:
+            raise RuntimeError('Weights are not initialized!')
+        
+        self.adam_iteration_counter = 0
+        self.adam_moment1 = [np.zeros_like(W) for W in self.W]
+        self.adam_moment2 = [np.zeros_like(W) for W in self.W]
+        self.adam_beta1 = 0.9
+        self.adam_beta2 = 0.999
+        self.adam_eps = 1e-8
     
 
     def init_weights(self, W:np.array=None):
@@ -227,12 +245,31 @@ class FCNN:
                                    axis=2))
 
 
-    def update_weights(self):
+    def update_weights(self, optimizer):
+
         for i in range(len(self.W)):
-            self.W[i] = self.W[i] - self.lr * self.dW[i]
+            if optimizer == 'sgd':
+                self.W[i] = self.W[i] - self.lr * self.dW[i]
+            elif optimizer == 'adam':
+                # src: https://arxiv.org/pdf/1412.6980.pdf
+
+                self.adam_iteration_counter += 1
+
+                g = self.dW[i]
+
+                self.adam_moment1[i] = self.adam_beta1 * self.adam_moment1[i] + (1 - self.adam_beta1) * g
+                self.adam_moment2[i] = self.adam_beta2 * self.adam_moment2[i] + (1 - self.adam_beta2) * np.power(g, 2)
+
+                m_hat = np.divide(self.adam_moment1[i], 1 - np.power(self.adam_beta1, self.adam_iteration_counter))
+                v_hat = np.divide(self.adam_moment2[i], 1 - np.power(self.adam_beta2, self.adam_iteration_counter))
+
+                self.W[i] = self.W[i] - self.lr * np.divide( m_hat, np.sqrt(v_hat) + self.adam_eps)
+
+            else:
+                raise RuntimeError(f'Optimizer was not specified correctly: {optimizer}')
 
     
-    def train(self, X:np.array, Y_g:np.array, batch_size:int):
+    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam'):
         # TODO: I dont know if it is necessary to shuffle new in every epoch or if it can be done once for every epoch
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
@@ -251,7 +288,7 @@ class FCNN:
             self.forward_prop(X[batch_indices, :])
             # self.calc_loss(Y_g[batch_indices])
             self.backprop(Y_g[batch_indices])
-            self.update_weights()
+            self.update_weights(optimizer)
 
     def track_epoch(self, X:np.array, Y_g:np.array):
         # calc loss over whole data
@@ -263,7 +300,7 @@ class FCNN:
         self.acc_hist.append(acc)
 
 
-    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int):
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam'):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
         # scaling the data with the specified scaler instance
@@ -273,8 +310,11 @@ class FCNN:
         # self.scaler.fit(X)
         # X = self.scaler.transform(X)
 
+        if optimizer == 'adam':
+            self._init_adam_parameters()
+
         for epoch in tqdm(range(epochs)):
-            self.train(X, Y_g, batch_size)
+            self.train(X, Y_g, batch_size, optimizer)
             self.track_epoch(X, Y_g)
     
 
