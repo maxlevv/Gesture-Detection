@@ -3,15 +3,13 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from neural_network import FCNN
-sys.path.append(r"C:\Users\Max\PycharmProjects\ml_dev_repo\src")
-from src.preprocessing.preprocessing_functions import Labels
+# sys.path.append("..")
+from preprocessing.preprocessing_functions import Labels
 from feature_scaling import StandardScaler
-from src.evaluation import metrics
 
+np.random.seed(0)
 
-def do_train_run(preproc_folder_path: Path):
-    # function for loading the data for training, standardization and start training
-
+def generate_dataset(preproc_folder_path: Path):
     df = None
     for preproc_csv_file_path in preproc_folder_path.glob('**/*_preproc.csv'):
         next_df = pd.read_csv(preproc_csv_file_path, sep=' *,', engine='python')
@@ -22,8 +20,7 @@ def do_train_run(preproc_folder_path: Path):
     
     y = df[Labels.get_column_names()].to_numpy()
     X = df.drop(Labels.get_column_names(), axis=1).to_numpy()
-    print(X.shape)
-    print(y.shape)
+
     del df
 
     # seperate train and validation data
@@ -36,13 +33,22 @@ def do_train_run(preproc_folder_path: Path):
     X_train = X[shuffled_indices[:split_index]]
     y_train = y[shuffled_indices[:split_index]]
 
-    X_val = X[shuffled_indices[split_index + 1:]]
-    y_val = y[shuffled_indices[split_index + 1:]]
+    X_val = X[shuffled_indices[split_index:]]
+    y_val = y[shuffled_indices[split_index:]]
 
     # standardize columns
     scaler = StandardScaler()
     scaler.fit(X_train) 
     X_train = scaler.transform(X_train)
+    X_val = scaler.transform(X_val)
+
+    return X_train, y_train, X_val, y_val, scaler
+
+
+def do_train_run(preproc_folder_path: Path):
+    # function for loading the data for training, standardization and start training
+
+    X_train, y_train, X_val, y_val, scaler = generate_dataset(preproc_folder_path)
 
     # initialize the network
     neural_net = FCNN(
@@ -56,28 +62,31 @@ def do_train_run(preproc_folder_path: Path):
     neural_net.init_weights()
 
     # start training
-    neural_net.fit(X_train, y_train, lr=0.001, epochs=500, batch_size=20, lambd=0.0001)
-    print(neural_net.loss_hist[-1])
+    lr = 0.001
+    epochs = 100
+    batch_size = 20
+    neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size)
 
-    #neural_net.init_weights()
-    #neural_net.fit(X_train, y_train, lr=0.001, epochs=100, batch_size=20, lambd=0)
+    neural_net.save_run(Path(r'../../saved_runs'), 'first_runs', author='Jonas', data_file_name='scaled_angle', \
+        lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X_train.shape[0], \
+        description="shoulder, wrist, elbow, cumsums all, window_size 6, scaled_forearm_angle")
 
-    neural_net.plot_stats()
-    print(neural_net.loss_hist[-1])
+    neural_net.calc_metrics(X_train, y_train)
+    neural_net.calc_metrics(X_val, y_val)
 
-    o_train, z = neural_net.forward_it(X_train)
-    h_train = np.asarray(o_train[-1].T)
-
-    o_val, z = neural_net.forward_it(X_val)
-    h_val = np.asarray(o_val[-1].T)
-
-    matrix_train = metrics.calc_confusion_matrix(h_train, y_train)
-    matrix_val = metrics.calc_confusion_matrix(h_val, y_val)
-
-    metrics.print_confusion_matrix(matrix_train)
-    metrics.print_confusion_matrix(matrix_val)
     print("done")
 
 
+def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: Path):
+    neural_net = FCNN.load_run(run_folder_path)
+
+    X_train, y_train, X_val, y_val, _ = generate_dataset(preproc_folder_path)
+
+    neural_net.calc_metrics(X_train, y_train)
+    neural_net.calc_metrics(X_val, y_val)
+
+
 if __name__ == '__main__':
-    do_train_run(Path(r'../../data/preprocessed_frames/train_run_max_2'))
+    # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
+    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-03_0_73-40-40-30-20-10-4'), \
+        Path(r'../../data/preprocessed_frames/scaled_angle'))
