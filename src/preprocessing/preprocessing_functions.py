@@ -11,18 +11,18 @@ import glob
 
 # considering only the manitroy gestures (swipe right, left, rotation)
 
-mediapipe_colums_for_diff = [
-    # "left_shoulder_x", "left_shoulder_y",
-    # "right_shoulder_x", "right_shoulder_y",
+mediapipe_columns_for_diff = [
+    "left_shoulder_x", "left_shoulder_y",
+    "right_shoulder_x", "right_shoulder_y",
     "left_elbow_x", "left_elbow_y",
     "right_elbow_x", "right_elbow_y",
     "left_wrist_x", "left_wrist_y",
     "right_wrist_x", "right_wrist_y",
-    # "left_index_x", "left_index_y", # "left_index_z",
-    # "right_index_x", "right_index_y", # "right_index_z"
+    "left_index_x", "left_index_y", # "left_index_z",
+    "right_index_x", "right_index_y", # "right_index_z"
 ]
 
-mediapipe_columns_for_sum = mediapipe_colums_for_diff
+mediapipe_columns_for_sum = mediapipe_columns_for_diff
 
 
 class Labels(Enum):
@@ -298,7 +298,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
     if preproc_params.summands_pattern:
         X_sum, X_sum_df = cumulative_sum(df, preproc_params)
     else:
-        X_sum, X_sum_df = np.array([], shape=(num_samples, 0)), None 
+        X_sum, X_sum_df = np.array([]).reshape(num_samples, 0), None
 
     return np.c_[X_diff, X_sum].round(6), pd.concat([X_diff_df, X_sum_df], axis=1).round(6)
 
@@ -361,9 +361,9 @@ if __name__ == '__main__':
     # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=1, num_timesteps=7, summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
+        num_shifts=1, num_timesteps=5, difference_mode="one", mediapipe_columns_for_diff=mediapipe_columns_for_diff)
 
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-        r'../../data\preprocessed_frames\scaled_to_torso'), preproc_params)
+    handle_preprocessing(Path("../../data/labeled_frames/ready_to_train_2"), Path(
+        "C:/Users/Max/PycharmProjects/ml_dev_repo/data/preprocessed_frames/train_run_max_2"), preproc_params)
 
     print('done')

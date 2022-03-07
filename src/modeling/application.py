@@ -3,10 +3,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from neural_network import FCNN
-# sys.path.append("..")
-from preprocessing.preprocessing_functions import Labels
+sys.path.append(r"C:\Users\Max\PycharmProjects\ml_dev_repo\src")
+from src.preprocessing.preprocessing_functions import Labels
 from feature_scaling import StandardScaler
-
+from src.evaluation import metrics
 
 
 def do_train_run(preproc_folder_path: Path):
@@ -18,11 +18,12 @@ def do_train_run(preproc_folder_path: Path):
         if df is None:
             df = next_df
         else:
-            pd.concat([df, next_df], axis=0)
+            df = pd.concat([df, next_df], axis=0)
     
     y = df[Labels.get_column_names()].to_numpy()
     X = df.drop(Labels.get_column_names(), axis=1).to_numpy()
-
+    print(X.shape)
+    print(y.shape)
     del df
 
     # seperate train and validation data
@@ -35,8 +36,8 @@ def do_train_run(preproc_folder_path: Path):
     X_train = X[shuffled_indices[:split_index]]
     y_train = y[shuffled_indices[:split_index]]
 
-    X_val = X[shuffled_indices[split_index:]]
-    y_val = y[shuffled_indices[split_index:]]
+    X_val = X[shuffled_indices[split_index + 1:]]
+    y_val = y[shuffled_indices[split_index + 1:]]
 
     # standardize columns
     scaler = StandardScaler()
@@ -55,10 +56,28 @@ def do_train_run(preproc_folder_path: Path):
     neural_net.init_weights()
 
     # start training
-    neural_net.fit(X_train, y_train, lr=0.001, epochs=100, batch_size=20)
+    neural_net.fit(X_train, y_train, lr=0.001, epochs=500, batch_size=20, lambd=0.0001)
+    print(neural_net.loss_hist[-1])
 
+    #neural_net.init_weights()
+    #neural_net.fit(X_train, y_train, lr=0.001, epochs=100, batch_size=20, lambd=0)
+
+    neural_net.plot_stats()
+    print(neural_net.loss_hist[-1])
+
+    o_train, z = neural_net.forward_it(X_train)
+    h_train = np.asarray(o_train[-1].T)
+
+    o_val, z = neural_net.forward_it(X_val)
+    h_val = np.asarray(o_val[-1].T)
+
+    matrix_train = metrics.calc_confusion_matrix(h_train, y_train)
+    matrix_val = metrics.calc_confusion_matrix(h_val, y_val)
+
+    metrics.print_confusion_matrix(matrix_train)
+    metrics.print_confusion_matrix(matrix_val)
     print("done")
 
 
 if __name__ == '__main__':
-    do_train_run(Path(r'../../data/preprocessed_frames/scaled_to_torso'))
+    do_train_run(Path(r'../../data/preprocessed_frames/train_run_max_2'))

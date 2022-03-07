@@ -39,6 +39,8 @@ class FCNN:
         self.loss_func_str = loss_func
         # self.layer_output_funcs = []    # functions to calcualte the output of each layer
         self.scaler = scaler     # instance of a class with methods fit(), transform() like in notebook 5
+        self.lambd = None
+        self.batch_size = None
 
         self._activation_func_dict = {
             'sigmoid': sigmoid,
@@ -168,8 +170,16 @@ class FCNN:
         # return self.forward_rek(X, layer=len(self.size['layer_list'])) old
         self.O, self.Z = self.forward_it(X)
 
+
     def calc_loss(self, Y_g):
-        self.loss = self.loss_func(self.O[-1].T, Y_g)
+        if self.lambd is None:
+            self.loss = self.loss_func(self.O[-1].T, Y_g)
+        else:
+            sum = 0
+            for matrix in self.W:
+                sum = sum + np.sum(np.square(matrix))
+            self.loss = self.loss_func(self.O[-1].T, Y_g) \
+                        + (self.lambd / (2 * np.shape(self.O[-1])[1]) * sum)
 
 
     def backprop(self, Y_g:np.array):
@@ -223,8 +233,12 @@ class FCNN:
 
 
     def update_weights(self):
-        for i in range(len(self.W)):
-            self.W[i] = self.W[i] - self.lr * self.dW[i]
+        if self.lambd is None:
+            for i in range(len(self.W)):
+                self.W[i] = self.W[i] - self.lr * self.dW[i]
+        else:
+            for i in range(len(self.W)):
+                self.W[i] = self.W[i] - self.lr * (self.dW[i] + (self.lambd / self.batch_size * self.W[i]))
 
     
     def train(self, X:np.array, Y_g:np.array, batch_size:int):
@@ -258,9 +272,11 @@ class FCNN:
         self.acc_hist.append(acc)
 
 
-    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int):
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, lambd=None):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
+        self.batch_size = batch_size
+        self.lambd = lambd
         # scaling the data with the specified scaler instance
         # TODO: does y_d need to be scaled here?
         
@@ -301,7 +317,7 @@ class FCNN:
         fig, axes = plt.subplots(1, 2, figsize=(10, 6))
         axes[0].plot(self.loss_hist)
         axes[1].plot(self.acc_hist)
-        # fig.show()
+        fig.show()
         return fig
     
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 

@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+#def softmax_to_one_hot_encoded(h: np.array):
+
+
 
 def accuracy(h: np.array, y: np.array):
     return (np.round(h) == y).all(axis=1).sum() / y.shape[0]
