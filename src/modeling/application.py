@@ -91,5 +91,5 @@ def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: P
 
 if __name__ == '__main__':
     # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
-    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-06_7_73-40-40-30-20-10-4'), \
+    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-04_2_73-40-40-30-20-10-4'), \
          Path(r'../../data/preprocessed_frames/scaled_angle'))
