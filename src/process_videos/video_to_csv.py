@@ -63,10 +63,10 @@ def testing():
 def converting():
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\rotate_right')
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_right')
-    video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_left')
+    video_folder_path = Path(r'C:\Users\Max\Desktop\Videos\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
-    raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_left')
+    raw_frames_folder_path = Path(r'C:\Users\Max\Desktop\Videos')
     video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
 
 
