@@ -39,6 +39,8 @@ class FCNN:
         self.loss_func_str = loss_func
         # self.layer_output_funcs = []    # functions to calcualte the output of each layer
         self.scaler = scaler     # instance of a class with methods fit(), transform() like in notebook 5
+        self.weight_decay = None
+        self.lambd = None
 
         self.adam_moment1 = None
         self.adam_moment2 = None
@@ -119,6 +121,7 @@ class FCNN:
         else:
             np.random.seed(0)
             curr_layer_size = self.input_size
+            self.W = []
             for next_layer_size, bias in zip(self.layer_list, self.bias_list):
                 # have the weights distributed from -0.5 to 0.5
                 W = np.random.rand(next_layer_size, curr_layer_size + bias) - 0.5
@@ -197,7 +200,13 @@ class FCNN:
         self.O, self.Z = self.forward_it(X)
 
     def calc_loss(self, Y_g):
-        self.loss = self.loss_func(self.O[-1].T, Y_g)
+        if self.lambd is None:
+            self.loss = self.loss_func(self.O[-1].T, Y_g)
+        else:
+            sum = 0
+            for matrix in self.W:
+                sum = sum + np.sum(np.square(matrix))
+            self.loss = self.loss_func(self.O[-1].T, Y_g) + (self.lambd / (2 * np.shape(self.O[-1])[1]) * sum)
 
 
     def backprop(self, Y_g:np.array):
@@ -250,11 +259,15 @@ class FCNN:
                                    axis=2))
 
 
-    def update_weights(self, optimizer):
+    def update_weights(self, optimizer, batch_size):
 
         for i in range(len(self.W)):
             if optimizer == 'sgd':
-                self.W[i] = self.W[i] - self.lr * self.dW[i]
+                if self.lambd == 0:
+                    self.W[i] = self.W[i] - self.lr * self.dW[i]
+                else:
+                    self.W[i] = self.W[i] - self.lr * (self.dW[i] + self.lambd / batch_size * self.W[i])
+
             elif optimizer == 'adam':
                 # src: https://arxiv.org/pdf/1412.6980.pdf
 
@@ -268,7 +281,12 @@ class FCNN:
                 m_hat = np.divide(self.adam_moment1[i], 1 - np.power(self.adam_beta1, self.adam_iteration_counter))
                 v_hat = np.divide(self.adam_moment2[i], 1 - np.power(self.adam_beta2, self.adam_iteration_counter))
 
-                self.W[i] = self.W[i] - self.lr * np.divide( m_hat, np.sqrt(v_hat) + self.adam_eps)
+                if self.weight_decay == 0:
+                    self.W[i] = self.W[i] - self.lr * np.divide(m_hat, np.sqrt(v_hat) + self.adam_eps)
+                else:
+                    # src: https://openreview.net/pdf?id=rk6qdGgCZ
+
+                    self.W[i] = self.W[i] - self.lr * (np.divide(m_hat, np.sqrt(v_hat) + self.adam_eps) + self.weight_decay * self.W[i])
 
             else:
                 raise RuntimeError(f'Optimizer was not specified correctly: {optimizer}')
@@ -293,7 +311,7 @@ class FCNN:
             self.forward_prop(X[batch_indices, :])
             # self.calc_loss(Y_g[batch_indices])
             self.backprop(Y_g[batch_indices])
-            self.update_weights(optimizer)
+            self.update_weights(optimizer, end_batch_index)
 
     def track_epoch(self, X:np.array, Y_g:np.array, X_val: np.array = None, Y_g_val: np.array = None):
         # calc loss over whole data
@@ -321,6 +339,7 @@ class FCNN:
     def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam',  X_val: np.array = None, Y_g_val: np.array = None):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
+
         # scaling the data with the specified scaler instance
         # TODO: does y_d need to be scaled here?
         
@@ -328,8 +347,18 @@ class FCNN:
         # self.scaler.fit(X)
         # X = self.scaler.transform(X)
 
+        if optimizer == 'sgd':
+            if weight_decay != 0:
+                raise Exception(f'sgd and weight decay dont go together')
+            else:
+                self.lambd = lambd
+
         if optimizer == 'adam':
-            self._init_adam_parameters()
+            if lambd != 0:
+                raise Exception(f'adam and L2 regularization dont go together')
+            else:
+                self._init_adam_parameters()
+                self.weight_decay = weight_decay
 
         for epoch in tqdm(range(epochs)):
             self.train(X, Y_g, batch_size, optimizer, X_val, Y_g_val)
