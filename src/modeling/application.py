@@ -63,16 +63,15 @@ def do_train_run(preproc_folder_path: Path):
 
     # start training
     lr = 0.001
-    epochs = 100
-    batch_size = 20
-    neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size)
+    epochs = 10
+    batch_size = 50
+    neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size, optimizer='adam', X_val=X_val, Y_g_val=y_val)
 
     neural_net.save_run(Path(r'../../saved_runs'), 'first_runs', author='Jonas', data_file_name='scaled_angle', \
         lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X_train.shape[0], \
-        description="shoulder, wrist, elbow, cumsums all, window_size 6, scaled_forearm_angle")
+        description="test_plots, with new hists")
 
-    neural_net.calc_metrics(X_train, y_train)
-    neural_net.calc_metrics(X_val, y_val)
+    neural_net.evaluate_model(X_train, y_train, X_val, y_val)
 
     print("done")
 
@@ -82,11 +81,15 @@ def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: P
 
     X_train, y_train, X_val, y_val, _ = generate_dataset(preproc_folder_path)
 
-    neural_net.calc_metrics(X_train, y_train)
-    neural_net.calc_metrics(X_val, y_val)
+    # neural_net.calc_metrics(X_train, y_train)
+    # neural_net.calc_metrics(X_val, y_val)
+
+    neural_net.evaluate_model(X_train, y_train, X_val, y_val)
+
+    print("done")
 
 
 if __name__ == '__main__':
     # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
-    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-03_0_73-40-40-30-20-10-4'), \
-        Path(r'../../data/preprocessed_frames/scaled_angle'))
+    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-06_7_73-40-40-30-20-10-4'), \
+         Path(r'../../data/preprocessed_frames/scaled_angle'))

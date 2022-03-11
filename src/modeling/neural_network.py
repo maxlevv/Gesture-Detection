@@ -8,14 +8,16 @@ from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_ent
 from activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
 from feature_scaling import StandardScaler
 from save_and_load import save_run, load_run
-from evaluation.metrics import calc_metrics
+from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
+from evaluation.evaluate import evaluate_neural_net 
+from helper import softmax2one_hot
 
 
 
 class FCNN:
 
     def __init__(self, input_size: int, layer_list: List[float], bias_list: List[int], activation_funcs: List, loss_func: str, 
-                       lr=None, scaler=None) -> None:
+                       lr=None, scaler=None, loss_hist=[], acc_hist=[], val_acc_hist=[], f1_score_hist=[], f1_score_val_hist=[]) -> None:
         
         self.n = [([input_size] + layer_list)[i] + bias for i, bias in enumerate(bias_list + [0])]
         self.bias_list = bias_list
@@ -28,9 +30,6 @@ class FCNN:
         self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
         self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
         self.loss = None    # loss for specific data
-        self.loss_hist = [] # save losses through a training run
-        self.acc_hist = []  # save accuracy through a training run
-        self.val_acc = None     # validation accuracy computed by stats
         self.lr = lr        # learning rate
         self.activation_funcs = list()      # activation function of each layer
         self.d_activation_funcs = list()    # derivative of activation function of each layer
@@ -49,6 +48,12 @@ class FCNN:
         self.adam_beta1 = None
         self.adam_beta2 = None
         self.adam_eps = None
+
+        self.loss_hist = loss_hist # save losses through a training run
+        self.acc_hist = acc_hist  # save accuracy through a training run
+        self.val_acc_hist = val_acc_hist    # validation accuracy computed by stats
+        self.f1_score_hist = f1_score_hist
+        self.f1_score_val_hist = f1_score_val_hist
 
         self._activation_func_dict = {
             'sigmoid': sigmoid,
@@ -235,7 +240,7 @@ class FCNN:
                     dW = dW * self.d_activation_funcs[i](self.Z[i].T)
 
                 self.dW.insert(0,
-                               np.sum(     # changed from mean
+                               np.mean(     # changed from mean
                                    dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
                                    axis=2))  # (n_(i+1) x n_i x b)
             else:
@@ -249,7 +254,7 @@ class FCNN:
                 # performing the last muliplication with the O values and summing (was averaging in a earlier verison) over the gradients 
                 # in the batch
                 self.dW.insert(0,
-                               np.sum(     # changed from mean
+                               np.mean(     # changed from mean
                                    dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
                                    axis=2))
 
@@ -287,7 +292,7 @@ class FCNN:
                 raise RuntimeError(f'Optimizer was not specified correctly: {optimizer}')
 
     
-    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam'):
+    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam', X_val: np.array = None, Y_g_val: np.array = None):
         # TODO: I dont know if it is necessary to shuffle new in every epoch or if it can be done once for every epoch
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
@@ -308,21 +313,30 @@ class FCNN:
             self.backprop(Y_g[batch_indices])
             self.update_weights(optimizer, end_batch_index)
 
-    def track_epoch(self, X:np.array, Y_g:np.array):
+    def track_epoch(self, X:np.array, Y_g:np.array, X_val: np.array = None, Y_g_val: np.array = None):
         # calc loss over whole data
         self.clear_data_specific_parameters()
         self.forward_prop(X)
         self.calc_loss(Y_g)
         self.loss_hist.append(self.loss)
-        acc = self.calc_stats(X, Y_g, Y=self.O[-1].T)
+        Y = self.O[-1].T
+        if not X_val is None: 
+            self.clear_data_specific_parameters()
+            self.forward_prop(X_val)
+            self.calc_loss(Y_g_val)
+            Y_val = self.O[-1].T
+            acc, val_acc, f1_scores, f1_scores_val = self.calc_stats(Y, Y_g, Y_val, Y_g_val)
+
+            self.val_acc_hist.append(val_acc)
+            self.f1_score_val_hist.append(f1_scores_val)
+        else:
+            acc, f1_scores = self.calc_stats(Y, Y_g)
+
         self.acc_hist.append(acc)
+        self.f1_score_hist.append(f1_scores)
 
 
-    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam',
-            weight_decay:float = 0, lambd:float = 0):
-        # lambd for classic L2 regularization and sgd as an optimizer
-        # weight_decay for adam optimizer
-
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam',  X_val: np.array = None, Y_g_val: np.array = None):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
 
@@ -347,33 +361,42 @@ class FCNN:
                 self.weight_decay = weight_decay
 
         for epoch in tqdm(range(epochs)):
-            self.train(X, Y_g, batch_size, optimizer)
-            self.track_epoch(X, Y_g)
+            self.train(X, Y_g, batch_size, optimizer, X_val, Y_g_val)
+            self.track_epoch(X, Y_g, X_val, Y_g_val)
     
 
-    def calc_stats(self, X:np.array, Y_g:np.array, Y:np.array=None, safe_val_acc:bool=False):
+    def calc_stats(self, Y:np.array, Y_g:np.array, Y_val:np.array = None, Y_g_val:np.array = None):
         """
         for classification problems -> Y_g needs to binary
         """
-        if Y is None:
-            self.forward_prop(X)
-            Y = self.O[-1].T
+        # if Y is None:
+        #     self.forward_prop(X)
+        #     Y = self.O[-1].T
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
         if not Y_g.shape == Y.shape:
             raise Exception('Y_g and Y shapes do not match')
+
+        Y_one_hot = softmax2one_hot(Y)
+        acc = (Y_g == Y_one_hot).all(axis=1).sum() / Y.shape[0]
+        f1_scores = [None] * Y.shape[1]
+        conf_matrix = calc_confusion_matrix(Y_one_hot, Y_g)
+        for klasse in range(Y.shape[1]):
+            f1_scores[klasse] = f1_score(conf_matrix, klasse)
+
+        if not Y_val is None:
+            Y_val_one_hot = softmax2one_hot(Y_val)
+
+            val_acc = (Y_g_val == Y_val_one_hot).all(axis=1).sum() / Y_val.shape[0] 
+
+            f1_scores_val = [None] * Y.shape[1]
+            conf_matrix = calc_confusion_matrix(Y_val_one_hot, Y_g_val)
+            for klasse in range(Y.shape[1]):
+                f1_scores_val[klasse] = f1_score(conf_matrix, klasse)
+
+            return acc, val_acc, f1_scores, f1_scores_val
         
-        Y_bin = Y.round()
-
-        # Y (b, n)
-        # accuracy
-        acc = (Y_g == Y_bin).all(axis=1).sum() / Y.shape[0]
-        # TODO: implement precision, recall and F1 score - for those a binary classification is needed 
-        # or we calculate the states for one claas compared to the rest
-
-        if safe_val_acc: self.val_acc = acc
-
-        return acc
+        return acc, f1_scores
 
     def plot_stats(self):
         fig, axes = plt.subplots(1, 2, figsize=(10, 6))
@@ -387,6 +410,9 @@ class FCNN:
         self.forward_prop(X)
         y = self.O[-1].T
         calc_metrics(y, y_g)
+
+    def evaluate_model(self, X_train, y_train, X_val, y_val):
+        evaluate_neural_net(self, X_train, y_train, X_val, y_val)
     
 
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
@@ -400,7 +426,8 @@ class FCNN:
         W, meta_data = load_run(from_folder_path)
         new_net = cls(meta_data.architecture[0], meta_data.architecture[1:], meta_data.bias_list, 
             meta_data.activation_functions, meta_data.loss_function, meta_data.lr, 
-            StandardScaler.from_dict(meta_data.scaler))
+            StandardScaler.from_dict(meta_data.scaler), meta_data.loss_hist, meta_data.acc_hist, 
+            meta_data.val_acc_hist, meta_data.f1_score_hist, meta_data.f1_score_val_hist)
         new_net.W = W
         print(f'Loaded run with epochs {meta_data.epochs}, batch_size {meta_data.batch_size}, num_samples {meta_data.num_samples}')
         return new_net

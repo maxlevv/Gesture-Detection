@@ -3,10 +3,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from preprocessing.preprocessing_functions import Labels
+from modeling.helper import softmax2one_hot
 
 
 def accuracy(h: np.array, y: np.array):
-    return (np.round(h) == y).all(axis=1).sum() / y.shape[0]
+    return (softmax2one_hot(h) == y).all(axis=1).sum() / y.shape[0]
+
+
+def generate_confusion_plot(h: np.array, y: np.array, ax: plt.axes = None, title: str = None):
+    conf = calc_confusion_matrix(h, y)
+    plot_confusion_matrix(conf, ax=ax, title=title)
+    
 
 
 def calc_confusion_matrix(h: np.array, y: np.array):
@@ -18,8 +25,7 @@ def calc_confusion_matrix(h: np.array, y: np.array):
 
     # for each row set the maximal value to one and the rest to zero
     # instead of h.round()
-    h_onehot = np.zeros_like(h)
-    h_onehot[np.arange(len(h)), h.argmax(axis=1)] = 1
+    h_onehot = softmax2one_hot(h)
 
     for i in range(n):
         for j in range(n):
@@ -29,15 +35,26 @@ def calc_confusion_matrix(h: np.array, y: np.array):
     return matrix
 
 
-def print_confusion_matrix(confusion_matrix: np.array):
+def plot_confusion_matrix(confusion_matrix: np.array, fig: plt.figure = None, ax: plt.axes = None, title: str = None, verbose: bool = False) -> plt.figure:
+    # fig situation hier is bisschen weird nicht wundern 
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    if ax is None: 
+        fig, ax = plt.subplots(figsize=(10, 8))
 
-    sns.heatmap(confusion_matrix, annot=confusion_matrix , fmt="", ax=ax)
+
+    confusion_df = pd.DataFrame(data=confusion_matrix, columns=Labels.get_label_list(), index=Labels.get_label_list())
+
+    sns.heatmap(confusion_df, annot=confusion_matrix , fmt="", ax=ax)
     ax.set_xlabel("ground truth")
     ax.set_ylabel("predicted")
-    ax.set_title("confusion matrix")
-    fig.show()
+    if not title:
+        ax.set_title("confusion matrix")
+    else:
+        ax.set_title(title)
+
+    if verbose: fig.show()
+
+    
 
 # attribute Auswahl als Integer entsprechend der Nummerierung der Label in der Klasse preprocessing_functions.Labels
 def precision(confusion_matrix: np.array, attribute: int):
@@ -54,12 +71,13 @@ def f1_score(confusion_matrix: np.array, attribute: int):
     score = 2 * (prec * rec) / (prec + rec)
     return score
 
+
 def calc_metrics(h: np.array, y: np.array):
 
     # accuracy
 
     conf_matrix = calc_confusion_matrix(h, y)
-    print_confusion_matrix(conf_matrix)
+    plot_confusion_matrix(conf_matrix, verbose=True)
     f1_scores = []
     precisions = []
     recalls = []
