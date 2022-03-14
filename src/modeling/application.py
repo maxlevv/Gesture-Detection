@@ -20,6 +20,7 @@ def generate_dataset(preproc_folder_path: Path):
     
     y = df[Labels.get_column_names()].to_numpy()
     X = df.drop(Labels.get_column_names(), axis=1).to_numpy()
+    X = X[:, 1:]
 
     del df
 
@@ -63,13 +64,13 @@ def do_train_run(preproc_folder_path: Path):
 
     # start training
     lr = 0.001
-    epochs = 10
+    epochs = 100
     batch_size = 50
-    neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size, optimizer='adam', X_val=X_val, Y_g_val=y_val)
+    neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size, optimizer='adam', weight_decay=0.0001, X_val=X_val, Y_g_val=y_val)
 
-    neural_net.save_run(Path(r'../../saved_runs'), 'first_runs', author='Jonas', data_file_name='scaled_angle', \
+    neural_net.save_run(Path(r'../../saved_runs'), 'first_run_max', author='Max', data_file_name='scaled_angle', \
         lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X_train.shape[0], \
-        description="test_plots, with new hists")
+        description="just a test")
 
     neural_net.evaluate_model(X_train, y_train, X_val, y_val)
 
@@ -90,6 +91,6 @@ def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: P
 
 
 if __name__ == '__main__':
-    # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
-    load_training_run_and_evaluate(Path(r'../../saved_runs\first_runs\2022-03-06_7_73-40-40-30-20-10-4'), \
-         Path(r'../../data/preprocessed_frames/scaled_angle'))
+    do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
+    #load_training_run_and_evaluate(Path(r'../../saved_runs\first_run_max\2022-03-12_0_73-40-40-30-20-10-4'), \
+    #     Path(r'../../data/preprocessed_frames/scaled_angle'))
