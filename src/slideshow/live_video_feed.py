@@ -4,7 +4,7 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 import numpy as np
-# from prediction_functions import create_Application
+from prediction_functions import create_Application
 import pandas as pd
 import yaml
 from sanic import Sanic
@@ -78,15 +78,15 @@ def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, 
             frame.append(results.pose_landmarks.landmark[i].x)
             frame.append(results.pose_landmarks.landmark[i].y)
             frame.append(results.pose_landmarks.landmark[i].z)
-            frame.append(results.pose_landmarks.landmark[i].visibility)
+            frame.append(results.pose_landmarks.landmark[i].visibility)  # TODO: change to confidence, if needed
     return timestamp, frame
 
 
 if __name__ == "__main__":
     # app.run(host="0.0.0.0", debug=True)
 
-    # my_model = create_Application()
-    # my_model.initialize_events()
+    my_model = create_Application()
+    my_model.initialize_events()
 
     show_video = True
     show_data = True
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                     f"{KEYPOINT_NAMES[i]}_visibility"]
     frames_df = pd.DataFrame(np.zeros(shape=(nb_frames, 32 * 4)), columns=columns)
     frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
-    frames_df.set_index("timestamp", inplace=True)
+    #frames_df.set_index("timestamp", inplace=True)
 
     success = True
     sufficient_frames = False
@@ -111,6 +111,7 @@ if __name__ == "__main__":
             curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
                                                          pose)
 
+            frames_df.set_index("timestamp", inplace=True)
             if curr_frame:  # mediapipe did not recognize features in frame
 
                 if not sufficient_frames:
@@ -122,12 +123,11 @@ if __name__ == "__main__":
                 frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
                 frames_df.loc[curr_timestamp] = curr_frame
                 frames_df.sort_index(inplace=True)
-
+                frames_df.reset_index(inplace=True)
                 # todo: resampling
 
                 if sufficient_frames:
-                    pass
-                    # my_model.make_prediction_for_live(df)
-                    # my_model.compute_events(my_model.prediction)
+                    my_model.make_prediction_for_live(frames_df)
+                    my_model.compute_events(my_model.prediction)
 
     cap.release()
