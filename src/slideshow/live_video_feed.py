@@ -1,16 +1,17 @@
 import os
-import io
-from collections import deque
-from prediction_functions import create_Application
-import pandas as pd
+from pathlib import Path
+
 import cv2
 import mediapipe as mp
+import numpy as np
+# from prediction_functions import create_Application
+import pandas as pd
 import yaml
 from sanic import Sanic
 from sanic.response import html
 
-from modeling.feature_scaling import StandardScaler
-from modeling.neural_network import FCNN
+# from modeling.feature_scaling import StandardScaler
+# from modeling.neural_network import FCNN
 
 slideshow_root_path = os.path.dirname(__file__) + "/slideshow/"
 
@@ -31,7 +32,6 @@ async def emitter(_request, ws):
     print("websocket connection opened")
 
 
-
 def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -43,7 +43,7 @@ def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index
         cap = cv2.VideoCapture(filename=mp4_path)  # Video
 
     # the names of each joint ("keypoint") are defined in this yaml file:
-    with open("..\process_videos\keypoint_mapping.yml", "r") as yaml_file:
+    with open(Path("../process_videos/keypoint_mapping.yml"), "r") as yaml_file:
         mappings = yaml.safe_load(yaml_file)
         KEYPOINT_NAMES = mappings["face"]
         KEYPOINT_NAMES += mappings["body"]
@@ -71,39 +71,63 @@ def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, 
     if cv2.waitKey(5) & 0xFF == 27:
         return
 
-    result = dict()
+    timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+    frame = []
     if results.pose_landmarks is not None:
-        result["timestamp"]: f"{str(cap.get(cv2.CAP_PROP_POS_MSEC))}"
         for i in range(32):
-            result[f"{KEYPOINT_NAMES[i]}_x"]: f"{str(results.pose_landmarks.landmark[i].x)}"
-            result[f"{KEYPOINT_NAMES[i]}_y"]: f"{str(results.pose_landmarks.landmark[i].y)}"
-            result[f"{KEYPOINT_NAMES[i]}_z"]: f"{str(results.pose_landmarks.landmark[i].z)}"
-            result[f"{KEYPOINT_NAMES[i]}_visibility"]: f"{str(results.pose_landmarks.landmark[i].visibility)}"
-        #print(result)
-        return result
+            frame.append(results.pose_landmarks.landmark[i].x)
+            frame.append(results.pose_landmarks.landmark[i].y)
+            frame.append(results.pose_landmarks.landmark[i].z)
+            frame.append(results.pose_landmarks.landmark[i].visibility)
+    return timestamp, frame
 
 
 if __name__ == "__main__":
     # app.run(host="0.0.0.0", debug=True)
 
-    my_model = create_Application()
-    my_model.initialize_events()
-
-    frames_df = pd.DataFrame
+    # my_model = create_Application()
+    # my_model.initialize_events()
 
     show_video = True
     show_data = True
 
     mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap = config_mediapipe(live_feed=True)
 
+    nb_frames: int = 7
+    columns = []
+    for i in range(32):
+        columns += [f"{KEYPOINT_NAMES[i]}_x", f"{KEYPOINT_NAMES[i]}_y", f"{KEYPOINT_NAMES[i]}_z",
+                    f"{KEYPOINT_NAMES[i]}_visibility"]
+    frames_df = pd.DataFrame(np.zeros(shape=(nb_frames, 32 * 4)), columns=columns)
+    frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
+    frames_df.set_index("timestamp", inplace=True)
+
     success = True
+    sufficient_frames = False
+    nb_received_frames = 0
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened() and success:
 
-            curr_frame = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, pose)
-            print(curr_frame)
+            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
+                                                         pose)
 
-            #my_model.make_prediction_for_live(df)
-            #my_model.compute_events(my_model.prediction)
+            if curr_frame:  # mediapipe did not recognize features in frame
+
+                if not sufficient_frames:
+                    nb_received_frames += 1
+                    if nb_received_frames >= nb_frames:
+                        sufficient_frames = True
+
+                idx_oldest_frame = frames_df.index.min()
+                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
+                frames_df.loc[curr_timestamp] = curr_frame
+                frames_df.sort_index(inplace=True)
+
+                # todo: resampling
+
+                if sufficient_frames:
+                    pass
+                    # my_model.make_prediction_for_live(df)
+                    # my_model.compute_events(my_model.prediction)
 
     cap.release()

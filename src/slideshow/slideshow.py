@@ -34,7 +34,7 @@ async def emitter(_request, ws):
             current_frames.popleft()
             current_frames.append(current_frame)
 
-            X = ...  # from current_frames
+            X = ...  # from current_frames, function from issue #20
             X_scaled = scaler.transform(X)
             gesture = net.forward_prop(X_scaled)
             if gesture != 'idle':
