@@ -4,11 +4,12 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 import numpy as np
-from prediction_functions import create_Application
 import pandas as pd
 import yaml
 from sanic import Sanic
 from sanic.response import html
+
+from prediction_functions import create_Application
 
 # from modeling.feature_scaling import StandardScaler
 # from modeling.neural_network import FCNN
@@ -30,6 +31,37 @@ async def index(request):
 @app.websocket("/events")
 async def emitter(_request, ws):
     print("websocket connection opened")
+
+    success = True
+    sufficient_frames = False
+    nb_received_frames = 0
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened() and success:
+
+            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
+                                                         pose)
+
+            frames_df.set_index("timestamp", inplace=True)
+            if curr_frame:  # mediapipe recognized features in frame
+
+                if not sufficient_frames:
+                    nb_received_frames += 1
+                    if nb_received_frames >= nb_frames:
+                        sufficient_frames = True
+
+                idx_oldest_frame = frames_df.index.min()
+                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
+                frames_df.loc[curr_timestamp] = curr_frame
+                frames_df.sort_index(inplace=True)
+                frames_df.reset_index(inplace=True)
+                # todo: resampling
+
+                if sufficient_frames:
+                    my_model.make_prediction_for_live(frames_df)
+                    my_model.compute_events(my_model.prediction)
+                    gesture = my_model.events[-1]
+                    if gesture != 'idle':
+                        await ws.send(gesture)
 
 
 def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
@@ -100,34 +132,6 @@ if __name__ == "__main__":
                     f"{KEYPOINT_NAMES[i]}_visibility"]
     frames_df = pd.DataFrame(np.zeros(shape=(nb_frames, 32 * 4)), columns=columns)
     frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
-    #frames_df.set_index("timestamp", inplace=True)
+    # frames_df.set_index("timestamp", inplace=True)
 
-    success = True
-    sufficient_frames = False
-    nb_received_frames = 0
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        while cap.isOpened() and success:
-
-            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
-                                                         pose)
-
-            frames_df.set_index("timestamp", inplace=True)
-            if curr_frame:  # mediapipe did not recognize features in frame
-
-                if not sufficient_frames:
-                    nb_received_frames += 1
-                    if nb_received_frames >= nb_frames:
-                        sufficient_frames = True
-
-                idx_oldest_frame = frames_df.index.min()
-                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
-                frames_df.loc[curr_timestamp] = curr_frame
-                frames_df.sort_index(inplace=True)
-                frames_df.reset_index(inplace=True)
-                # todo: resampling
-
-                if sufficient_frames:
-                    my_model.make_prediction_for_live(frames_df)
-                    my_model.compute_events(my_model.prediction)
-
-    cap.release()
+    # cap.release()
