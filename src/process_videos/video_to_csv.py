@@ -9,14 +9,14 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_pose = mp.solutions.pose
 
-    show_video = True
+    show_video = False
 
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
 
     for video_file_path in video_folder_path.glob('*.mp4'):
         cap = cv2.VideoCapture(str(video_file_path))
 
-        result_csv_filename = raw_frames_folder_path / f"{video_file_path.name.replace('.mp4', '_')}{current_time}_raw.csv"
+        result_csv_filename = raw_frames_folder_path / f"{video_file_path.name.replace('.mp4', '')}_raw.csv"
 
         csv_writer = dtc.CSVDataWriter()
         frame_count = 0
@@ -63,10 +63,10 @@ def testing():
 def converting():
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\rotate_right')
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_right')
-    video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_left')
+    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\3rd_session')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
-    raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_left')
+    raw_frames_folder_path = Path(r'..\..\data\raw_frames\third_session')
     video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
 
 
