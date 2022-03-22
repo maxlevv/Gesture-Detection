@@ -66,8 +66,8 @@ def converting():
     video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\3rd_session')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
-    raw_frames_folder_path = Path(r'..\..\data\raw_frames\third_session')
-    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
+    raw_frames_folder_path = Path(r'..\..\data\raw_frames\third_session_flipped')
+    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)
 
 
 if __name__ == '__main__':

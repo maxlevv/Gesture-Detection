@@ -67,12 +67,12 @@ def test():
 
 
 def do():
-    elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\2nd_session\txt_files')
+    elan_annotation_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\3rd_session\txt_files')
     # elan_annotation_folder_path = Path(r'..\..\data\elan_annotations')
     raw_frames_folder_path = Path(r'..\..\data\raw_frames')
     # raw_frames_folder_path = Path(r'..\..\data\raw_frames\nina')
     labeled_frames_folder_path = Path(r'..\..\data\labeled_frames')
-    labeled_frames_folder_path = Path(r'..\..\data\labeled_frames\second_session')
+    labeled_frames_folder_path = Path(r'..\..\data\labeled_frames\third_session')
 
     add_elan_labels_to_frame(elan_annotation_folder_path,
                              raw_frames_folder_path, labeled_frames_folder_path)
