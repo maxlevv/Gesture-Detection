@@ -412,15 +412,17 @@ class FCNN:
         y = self.O[-1].T
         calc_metrics(y, y_g)
 
-    def evaluate_model(self, X_train, y_train, X_val, y_val):
-        evaluate_neural_net(self, X_train, y_train, X_val, y_val)
+    def evaluate_model(self, X_train, y_train, X_val, y_val, save_plot_path:Path = None):
+        evaluate_neural_net(self, X_train, y_train, X_val, y_val, save_plot_path)
     
 
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
                  data_file_name:str, lr:float, batch_size:int, epochs:int, num_samples:int, 
                  description:str=None, name:str=None):
-        save_run(save_runs_folder_path, run_group_name, self, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
-    
+        save_folder_path = save_run(save_runs_folder_path, run_group_name, self, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
+        return save_folder_path
+
+
     @classmethod
     def load_run(cls, from_folder_path:Path) -> 'FCNN':
         # load an entire run with weights and all the meta data
