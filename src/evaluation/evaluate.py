@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 from typing import TYPE_CHECKING, List
 from evaluation.metrics import generate_confusion_plot
 from preprocessing.preprocessing_functions import Labels
@@ -45,11 +46,11 @@ def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str):
 
 
 
-def evaluate_neural_net(neural_net: FCNN, X_train, y_train, X_val, y_val):
-    fig, axs = generate_evaluation_plot(neural_net, X_train, y_train, X_val, y_val)
+def evaluate_neural_net(neural_net: FCNN, X_train, y_train, X_val, y_val, save_plot_path:Path = None):
+    fig, axs = generate_evaluation_plot(neural_net, X_train, y_train, X_val, y_val, save_plot_path)
 
 
-def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val):
+def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, save_plot_path:Path = None):
     neural_net.clear_data_specific_parameters()
     neural_net.forward_prop(X_train)
     h_train = neural_net.O[-1].T
@@ -68,7 +69,10 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val):
 
     generate_acc_plot(neural_net, ax=axs[0, 1])
 
-    fig.show()
+    if not save_plot_path == None:
+        fig.savefig(save_plot_path)
+    else:
+        fig.show()
 
     return fig, axs
 
