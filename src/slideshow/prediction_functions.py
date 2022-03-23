@@ -95,7 +95,7 @@ def create_Application():
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path(r'../../saved_runs\first_run_max\2022-03-12_0_72-40-40-30-20-10-4')
+    network_path = Path('../../saved_runs/first_run_max/2022-03-12_0_72-40-40-30-20-10-4')
     network = FCNN.load_run(network_path)
 
     my_model = Application(network, preproc_params)

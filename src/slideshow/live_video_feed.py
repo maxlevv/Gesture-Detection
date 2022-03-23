@@ -111,7 +111,11 @@ if __name__ == "__main__":
             curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
                                                          pose)
 
-            frames_df.set_index("timestamp", inplace=True)
+            try:
+                frames_df.set_index("timestamp", inplace=True)
+            except KeyError:
+                # Index exists already
+                pass
             if curr_frame:  # mediapipe did not recognize features in frame
 
                 if not sufficient_frames:
@@ -129,5 +133,8 @@ if __name__ == "__main__":
                 if sufficient_frames:
                     my_model.make_prediction_for_live(frames_df)
                     my_model.compute_events(my_model.prediction)
+                    #     gesture = my_model.events[-1]
+                    #     if gesture != 'idle':
+                    #         await ws.send(gesture)
 
     cap.release()
