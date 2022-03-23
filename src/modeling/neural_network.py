@@ -336,7 +336,8 @@ class FCNN:
         self.f1_score_hist.append(f1_scores)
 
 
-    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam',  X_val: np.array = None, Y_g_val: np.array = None):
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam', weight_decay:float = 0, lambd:float = 0,
+        X_val: np.array = None, Y_g_val: np.array = None):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
 
