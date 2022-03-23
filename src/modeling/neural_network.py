@@ -11,6 +11,7 @@ from save_and_load import save_run, load_run
 from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
 from evaluation.evaluate import evaluate_neural_net 
 from helper import softmax2one_hot
+from modeling import gradient_checking
 
 
 
@@ -54,6 +55,10 @@ class FCNN:
         self.val_acc_hist = val_acc_hist    # validation accuracy computed by stats
         self.f1_score_hist = f1_score_hist
         self.f1_score_val_hist = f1_score_val_hist
+
+        self.num_samples = None
+        self.idle_weight = None
+        self.non_idle_weight = None
 
         self._activation_func_dict = {
             'sigmoid': sigmoid,
@@ -209,6 +214,12 @@ class FCNN:
             self.loss = self.loss_func(self.O[-1].T, Y_g) + (self.lambd / (2 * np.shape(self.O[-1])[1]) * sum)
 
 
+    def apply_label_weighting(self, gradient_batch_tensor: np.array, Y_g: np.array):
+        # gradient_batch_tensor shape: (n_(i+1) x n_i x b)
+        label_weights = np.ones((Y_g.shape[0])) * self.non_idle_weight
+        label_weights[Y_g[:, 0] == 1] = self.idle_weight
+        return gradient_batch_tensor * label_weights[np.newaxis, np.newaxis, :]
+
     def backprop(self, Y_g:np.array):
         """
         y_g: y groud truth
@@ -238,11 +249,7 @@ class FCNN:
 
                     # (b x n_(i+1))  (Z[i]: (n_(i+1) x b))
                     dW = dW * self.d_activation_funcs[i](self.Z[i].T)
-
-                self.dW.insert(0,
-                               np.mean(     # changed from mean
-                                   dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
-                                   axis=2))  # (n_(i+1) x n_i x b)
+                
             else:
                 if self.bias_list[i+1]:
                     # removing the first column of the weight matrix is due to bias
@@ -251,12 +258,11 @@ class FCNN:
                     # (b x n_(i+1))  (Z[i]: (n_(i+1) x b))
                     dW = dW @ self.W[i+1] * self.d_activation_funcs[i](self.Z[i].T)
 
-                # performing the last muliplication with the O values and summing (was averaging in a earlier verison) over the gradients 
-                # in the batch
-                self.dW.insert(0,
-                               np.mean(     # changed from mean
-                                   dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
-                                   axis=2))
+
+            gradient_batch_tensor = dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :]    # (n_(i+1) x n_i x b)
+            gradient_batch_tensor = self.apply_label_weighting(gradient_batch_tensor, Y_g)  # (n_(i+1) x n_i x b)
+            self.dW.insert(0, np.mean(gradient_batch_tensor, axis=2))                       # (n_(i+1) x n_i)    
+            
 
 
     def update_weights(self, optimizer, batch_size):
@@ -341,6 +347,8 @@ class FCNN:
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
 
+        self.calc_gradient_label_weights(Y_g)
+
         # scaling the data with the specified scaler instance
         # TODO: does y_d need to be scaled here?
         
@@ -398,6 +406,15 @@ class FCNN:
             return acc, val_acc, f1_scores, f1_scores_val
         
         return acc, f1_scores
+
+
+    def calc_gradient_label_weights(self, y: np.array):
+        self.num_samples = y.shape[0]
+        num_idle_in_train = (y[:, 0] == 1).sum() # hier wird vorrausgestzt dass das erste label in one hot das idle label ist
+        num_non_idle_in_train = self.num_samples - num_idle_in_train
+        self.idle_weight = self.num_samples / ( 2 * num_idle_in_train)
+        self.non_idle_weight = self.num_samples / ( 2 * num_non_idle_in_train)
+
 
     def plot_stats(self):
         fig, axes = plt.subplots(1, 2, figsize=(10, 6))
