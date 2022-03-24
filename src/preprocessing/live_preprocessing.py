@@ -71,9 +71,13 @@ class LiveDfGenerator:
         df.index = df.index.astype(int) 
         return df
     
-    def generate_window_df(self, new_data, timestamp) -> pd.DataFrame:
-        if self.read_data(new_data, timestamp) == -1:
-            return -1
+    def generate_window_df(self, new_data, timestamp, frame=None) -> pd.DataFrame:
+        if frame:
+            self.frame_list.append(frame)
+            self.timestamps.append(timestamp)
+        else:
+            if self.read_data(new_data, timestamp) == -1:
+                return -1
 
         if len(self.frame_list) < self.window_size:
             # in this case not enough farmes have been read yet, so it returns None
@@ -93,6 +97,7 @@ class LiveDfGenerator:
         df = self.to_df()
         diff = np.diff(np.array(list(df.index)))
         print(f"{bcolors.WARNING}{diff}{bcolors.ENDC}")
+        
         df = self.resample(df)
         output_df = df[-self.window_size:]
         self.remove_oldest_frame_and_timestamp()

@@ -3,6 +3,7 @@ import multiprocessing
 from queue import Queue
 from pathlib import Path
 import cv2
+import yaml
 import mediapipe as mp
 from helpers import data_to_csv as dtc
 import time
@@ -19,9 +20,8 @@ mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 
 
-def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multiprocessing.Queue, flip_bool, test_queue):
+def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multiprocessing.Queue, flip_bool, mediapipe_tracking_points_dict: dict):
     # this is the mediapipe process
-    test_queue.put('test')
 
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while True:
@@ -33,7 +33,17 @@ def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multipr
             image.flags.writeable = False
             
             results = pose.process(image)
-            mediapipe_queue.put((results, timestamp))
+
+            # get the frame data here already as the items in the queue need to be pickled and the pose object can not be pickled
+            frame = []
+            for i in list(mediapipe_tracking_points_dict.values()):
+                frame.append(results.pose_landmarks.landmark[i].x)
+                frame.append(results.pose_landmarks.landmark[i].y)
+                frame.append(results.pose_landmarks.landmark[i].z)
+                frame.append(results.pose_landmarks.landmark[i].visibility)
+
+            # mediapipe_queue.put((results.pose_landmarks.landmark, timestamp))
+            mediapipe_queue.put((frame, timestamp))
 
 
 def call_resample(mediapipe_queue: multiprocessing.Queue, resample_queue: multiprocessing.Queue, 
@@ -41,8 +51,8 @@ def call_resample(mediapipe_queue: multiprocessing.Queue, resample_queue: multip
     # this is the rasample process
 
     while True:
-        results, timestamp = mediapipe_queue.get(block=True)
-        df = live_df_generator.generate_window_df(new_data=results.pose_landmarks, timestamp=timestamp)
+        frame, timestamp = mediapipe_queue.get(block=True)
+        df = live_df_generator.generate_window_df(new_data=None, timestamp=timestamp, frame=frame)
         resample_queue.put(df)
 
 
@@ -62,12 +72,19 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
             window_size=window_size, 
             skip_value=3)
 
-    mediapipe_process = multiprocessing.Process(target=call_mediapipe, args=(frames_queue, mediapipe_queue, flip_bool, test_queue))
-    print("queue says: ", test_queue.get(block=True))
+    with open(relevant_signals_dict_yaml_path, "r") as yaml_file:
+        mediapipe_tracking_points_dict = yaml.safe_load(yaml_file)
+
+    mediapipe_process = multiprocessing.Process(target=call_mediapipe, args=(frames_queue, mediapipe_queue, flip_bool, mediapipe_tracking_points_dict))
+    mediapipe_process.daemon = True
+    mediapipe_process.start()
     resample_process = multiprocessing.Process(target=call_resample, args=(mediapipe_queue, resample_queue, live_df_generator))
+    resample_process.daemon = True
+    resample_process.start()
 
     threaded_camera = ThreadedCamera()
 
+    prev_timestamp = 0
     it_counter = -1
     while True:
         it_counter += 1
@@ -76,8 +93,10 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
             continue
 
         image, timestamp = threaded_camera.get_from_queue()
+        print('diff timestamp in main loop', timestamp - prev_timestamp)
+        prev_timestamp = timestamp
         if it_counter % 2 == 1:
-            continue
+            pass
 
         frames_queue.put((image, timestamp))
 
