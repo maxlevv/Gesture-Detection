@@ -4,11 +4,12 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 import numpy as np
-from prediction_functions import create_Application
 import pandas as pd
 import yaml
 from sanic import Sanic
 from sanic.response import html
+
+from prediction_functions import create_Application
 
 # from modeling.feature_scaling import StandardScaler
 # from modeling.neural_network import FCNN
@@ -20,28 +21,6 @@ slideshow_root_path = os.path.dirname(__file__) + "/slideshow/"
 app = Sanic("slideshow_server")
 
 app.static("/static", slideshow_root_path)
-
-
-def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
-    mp_pose = mp.solutions.pose
-
-    if live_feed:
-        cap = cv2.VideoCapture(index=camera_index)  # Live from camera (change index if you have more than one camera)
-    else:
-        cap = cv2.VideoCapture(filename=mp4_path)  # Video
-
-    # the names of each joint ("keypoint") are defined in this yaml file:
-    with open(Path("../process_videos/keypoint_mapping.yml"), "r") as yaml_file:
-        mappings = yaml.safe_load(yaml_file)
-        KEYPOINT_NAMES = mappings["face"]
-        KEYPOINT_NAMES += mappings["body"]
-
-    return mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap
-
-
-mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap = config_mediapipe(live_feed=True)
 
 
 @app.route("/")
@@ -62,12 +41,8 @@ async def emitter(_request, ws):
             curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
                                                          pose)
 
-            try:
-                frames_df.set_index("timestamp", inplace=True)
-            except KeyError:
-                # Index exists already
-                pass
-            if curr_frame:  # mediapipe did not recognize features in frame
+            frames_df.set_index("timestamp", inplace=True)
+            if curr_frame:  # mediapipe recognized features in frame
 
                 if not sufficient_frames:
                     nb_received_frames += 1
@@ -85,9 +60,27 @@ async def emitter(_request, ws):
                     my_model.make_prediction_for_live(frames_df)
                     my_model.compute_events(my_model.prediction)
                     gesture = my_model.events[-1]
-                    print(gesture)
                     if gesture != 'idle':
                         await ws.send(gesture)
+
+
+def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
+    mp_pose = mp.solutions.pose
+
+    if live_feed:
+        cap = cv2.VideoCapture(index=camera_index)  # Live from camera (change index if you have more than one camera)
+    else:
+        cap = cv2.VideoCapture(filename=mp4_path)  # Video
+
+    # the names of each joint ("keypoint") are defined in this yaml file:
+    with open(Path("../process_videos/keypoint_mapping.yml"), "r") as yaml_file:
+        mappings = yaml.safe_load(yaml_file)
+        KEYPOINT_NAMES = mappings["face"]
+        KEYPOINT_NAMES += mappings["body"]
+
+    return mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap
 
 
 def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, pose):
@@ -122,13 +115,15 @@ def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, 
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    # app.run(host="0.0.0.0", debug=True)
 
     my_model = create_Application()
     my_model.initialize_events()
 
     show_video = True
     show_data = True
+
+    mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap = config_mediapipe(live_feed=True)
 
     nb_frames: int = 7
     columns = []
@@ -137,6 +132,6 @@ if __name__ == "__main__":
                     f"{KEYPOINT_NAMES[i]}_visibility"]
     frames_df = pd.DataFrame(np.zeros(shape=(nb_frames, 32 * 4)), columns=columns)
     frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
-    #frames_df.set_index("timestamp", inplace=True)
+    # frames_df.set_index("timestamp", inplace=True)
 
     # cap.release()
