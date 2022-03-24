@@ -2,10 +2,10 @@ from __future__ import annotations
 import numpy as np 
 from pathlib import Path
 # from neural_network import FCNN
-from feature_scaling import StandardScaler
+from modeling.feature_scaling import StandardScaler
 import json
 from typing import List, Tuple
-from metaData import MetaData
+from modeling.metaData import MetaData
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from neural_network import FCNN

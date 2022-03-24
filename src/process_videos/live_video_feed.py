@@ -97,6 +97,8 @@ def do_show_video(image, results):
         pass
 
 def check_if_new_frame_availible(threaded_camera: ThreadedCamera, timestamp):
+    # prob depreciated
+
     # print(bcolors.OKCYAN + f"{threaded_camera.capture.get(cv2.CAP_PROP_POS_MSEC)} == {timestamp}" + bcolors.ENDC)
     if threaded_camera.capture.get(cv2.CAP_PROP_POS_MSEC) == timestamp:
         # print(f"{bcolors.FAIL} Now new frame availiable {bcolors.ENDC}")
