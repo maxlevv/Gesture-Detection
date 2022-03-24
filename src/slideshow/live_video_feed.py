@@ -22,16 +22,6 @@ app = Sanic("slideshow_server")
 app.static("/static", slideshow_root_path)
 
 
-@app.route("/")
-async def index(request):
-    return html(open(slideshow_root_path + "/slideshow.html", "r").read())
-
-
-@app.websocket("/events")
-async def emitter(_request, ws):
-    print("websocket connection opened")
-
-
 def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -49,6 +39,55 @@ def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index
         KEYPOINT_NAMES += mappings["body"]
 
     return mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap
+
+
+mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap = config_mediapipe(live_feed=True)
+
+
+@app.route("/")
+async def index(request):
+    return html(open(slideshow_root_path + "/slideshow.html", "r").read())
+
+
+@app.websocket("/events")
+async def emitter(_request, ws):
+    print("websocket connection opened")
+
+    success = True
+    sufficient_frames = False
+    nb_received_frames = 0
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened() and success:
+
+            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
+                                                         pose)
+
+            try:
+                frames_df.set_index("timestamp", inplace=True)
+            except KeyError:
+                # Index exists already
+                pass
+            if curr_frame:  # mediapipe did not recognize features in frame
+
+                if not sufficient_frames:
+                    nb_received_frames += 1
+                    if nb_received_frames >= nb_frames:
+                        sufficient_frames = True
+
+                idx_oldest_frame = frames_df.index.min()
+                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
+                frames_df.loc[curr_timestamp] = curr_frame
+                frames_df.sort_index(inplace=True)
+                frames_df.reset_index(inplace=True)
+                # todo: resampling
+
+                if sufficient_frames:
+                    my_model.make_prediction_for_live(frames_df)
+                    my_model.compute_events(my_model.prediction)
+                    gesture = my_model.events[-1]
+                    print(gesture)
+                    if gesture != 'idle':
+                        await ws.send(gesture)
 
 
 def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, pose):
@@ -83,15 +122,13 @@ def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, 
 
 
 if __name__ == "__main__":
-    # app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=True)
 
     my_model = create_Application()
     my_model.initialize_events()
 
     show_video = True
     show_data = True
-
-    mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap = config_mediapipe(live_feed=True)
 
     nb_frames: int = 7
     columns = []
@@ -102,39 +139,4 @@ if __name__ == "__main__":
     frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
     #frames_df.set_index("timestamp", inplace=True)
 
-    success = True
-    sufficient_frames = False
-    nb_received_frames = 0
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        while cap.isOpened() and success:
-
-            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
-                                                         pose)
-
-            try:
-                frames_df.set_index("timestamp", inplace=True)
-            except KeyError:
-                # Index exists already
-                pass
-            if curr_frame:  # mediapipe did not recognize features in frame
-
-                if not sufficient_frames:
-                    nb_received_frames += 1
-                    if nb_received_frames >= nb_frames:
-                        sufficient_frames = True
-
-                idx_oldest_frame = frames_df.index.min()
-                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
-                frames_df.loc[curr_timestamp] = curr_frame
-                frames_df.sort_index(inplace=True)
-                frames_df.reset_index(inplace=True)
-                # todo: resampling
-
-                if sufficient_frames:
-                    my_model.make_prediction_for_live(frames_df)
-                    my_model.compute_events(my_model.prediction)
-                    #     gesture = my_model.events[-1]
-                    #     if gesture != 'idle':
-                    #         await ws.send(gesture)
-
-    cap.release()
+    # cap.release()

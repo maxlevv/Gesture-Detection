@@ -56,13 +56,11 @@ def load_meta_json_and_weights(from_folder_path:Path) -> Tuple[List[np.array], d
     i = -1
     while True:
         i = i + 1
-        w_file_path = f"w_{i}.npy"
+        w_file_path = os.path.join(from_folder_path, f"w_{i}.npy")
         if os.path.exists(w_file_path):
-            print(w_file_path)
             W.append(np.load(w_file_path))
             # here the order of the files could go wrong but practically it should work
         else:
-            print('not', w_file_path)
             break
 
     with open(list(from_folder_path.glob('*_meta.json'))[0], 'r') as meta_json_file:
