@@ -47,8 +47,8 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
 
     # define grid
     activation_list = ['sigmoid', 'relu', 'leaky_relu']
-    epoch_list = [2]
-    bsize_list = [501]
+    epoch_list = [100]
+    bsize_list = [300]
     lr_list = [0.001, 0.005, 0.01]
     wdecay_list = [0, 0.00001, 0.001]
 
@@ -74,7 +74,7 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
                         neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size,
                                        optimizer='adam', weight_decay=weight_decay, X_val=X_val, Y_g_val=y_val)
 
-                        save_folder_path = neural_net.save_run(save_runs_folder_path=Path(r'../../saved_runs/grid_search_1'),
+                        save_folder_path = neural_net.save_run(save_runs_folder_path=Path(r'../../saved_runs\jonas_first_grid_gross'),
                                             run_group_name=f'{activation_function},ep={epochs},bs={batch_size},lr={lr},wd={weight_decay}',
                                             author='Jonas', data_file_name='', lr=lr, batch_size=batch_size, epochs=epochs,
                                             num_samples=X_train.shape[0], description='erster Grid Search vamos')
@@ -104,8 +104,8 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
 
 
 if __name__ == '__main__':
-    train_folder_path = Path(r'../../data/preprocessed_frames/test_run_max')
-    val_folder_path = Path(r'../../data/preprocessed_frames/test_run_max')
+    train_folder_path = Path(r'../../data\preprocessed_frames\final\train')
+    val_folder_path = Path(r'../../data\preprocessed_frames\final\validation')
 
     X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)

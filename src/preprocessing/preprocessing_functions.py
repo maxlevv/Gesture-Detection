@@ -539,13 +539,22 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
         labeled_frames_folder_path (Path): load folder topath
         preprocessed_frames_folder_path (Path): to folder path
     """
-
+    err_files = []
     search_ending = '**/*_' + train_val_test + '_labeled.csv'
     for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob(search_ending)):
-        _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
+        print('Now on file: ', labeled_csv_file_path)
+        try:
+            if 'mandatory' in str(labeled_csv_file_path):
+                continue
+            _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
-        nn_input_df.to_csv(preprocessed_frames_folder_path /
-                           labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
+            nn_input_df.to_csv(preprocessed_frames_folder_path /
+                              labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
+        except Exception as e:
+            print("error in file", labeled_csv_file_path, e)
+            err_files.append((labeled_csv_file_path, e))
+    
+    print('error in files: \n', err_files)
 
 
 
@@ -559,16 +568,18 @@ if __name__ == '__main__':
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    mandatory_or_optional = 'mandatory'
+    mandatory_or_optional = 'optional'
     if mandatory_or_optional == 'mandatory':
         Labels = LabelsMandatory
 
-        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), Path(
-            r'../../data\preprocessed_frames\test_run_max'), preproc_params, train_val_test='train')
+        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+            r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
     elif mandatory_or_optional == 'optional':
         Labels = LabelsOptional
 
+        # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+        #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
         handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-            r'../../data\preprocessed_frames\test_run_max'), preproc_params, train_val_test='train')
+            r'../../data\preprocessed_frames\final\validation\optional'), preproc_params, train_val_test='val')
 
     print('done')
