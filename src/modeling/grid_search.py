@@ -21,11 +21,13 @@ def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, s
 
     if select_mandatory_label == True:
         Labels = LabelsMandatory
+        y = df[Labels.get_column_names()].to_numpy()
     else:
         Labels = LabelsOptional
+        y = df[Labels.get_column_names()].to_numpy()
 
-    y = df[Labels.get_column_names()].to_numpy()
-    X = df.drop(Labels.get_column_names(), axis=1).to_numpy()
+    df = df.drop(LabelsOptional.get_column_names(), axis=1)
+    X = df.to_numpy()
     X = X[:, 1:]
 
     del df
@@ -47,7 +49,7 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
 
     # define grid
     activation_list = ['sigmoid', 'relu', 'leaky_relu']
-    epoch_list = [100]
+    epoch_list = [10]
     bsize_list = [300]
     lr_list = [0.001, 0.005, 0.01]
     wdecay_list = [0, 0.00001, 0.001]
@@ -57,24 +59,26 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
     x_axis = []
 
     for activation_function in activation_list:
-        # initialize the network
-        neural_net = FCNN(
-            input_size=X_train.shape[1],
-            layer_list=[40, 40, 30, 20, 10, y_train.shape[1]],
-            bias_list=[1, 1, 1, 1, 1, 1],
-            activation_funcs=[activation_function] * 5 + ['softmax'],
-            loss_func='categorical_cross_entropy',
-            scaler=scaler
-        )
+        
         for epochs in epoch_list:
             for batch_size in bsize_list:
                 for lr in lr_list:
                     for weight_decay in wdecay_list:
+                        # initialize the network
+                        neural_net = FCNN(
+                            input_size=X_train.shape[1],
+                            layer_list=[40, 40, 30, 20, 10, y_train.shape[1]],
+                            bias_list=[1, 1, 1, 1, 1, 1],
+                            activation_funcs=[activation_function] * 5 + ['softmax'],
+                            loss_func='categorical_cross_entropy',
+                            scaler=scaler
+                        )
+
                         neural_net.init_weights()
                         neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size,
                                        optimizer='adam', weight_decay=weight_decay, X_val=X_val, Y_g_val=y_val)
 
-                        save_folder_path = neural_net.save_run(save_runs_folder_path=Path(r'../../saved_runs\jonas_first_grid_gross'),
+                        save_folder_path = neural_net.save_run(save_runs_folder_path=Path(r'../../saved_runs\jonas_2_grid_gross'),
                                             run_group_name=f'{activation_function},ep={epochs},bs={batch_size},lr={lr},wd={weight_decay}',
                                             author='Jonas', data_file_name='', lr=lr, batch_size=batch_size, epochs=epochs,
                                             num_samples=X_train.shape[0], description='erster Grid Search vamos')
