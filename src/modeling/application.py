@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -84,13 +85,16 @@ def load_training_run_and_evaluate(run_folder_path: Path, preproc_folder_path: P
 
     # neural_net.calc_metrics(X_train, y_train)
     # neural_net.calc_metrics(X_val, y_val)
-
+    t1 = time.perf_counter()
+    neural_net.forward_prop(X_val[10, :].reshape(1, -1))
+    t2 = time.perf_counter()
+    print('time for forward prop:', t2 - t1)
     neural_net.evaluate_model(X_train, y_train, X_val, y_val)
 
     print("done")
 
 
 if __name__ == '__main__':
-    do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
-    #load_training_run_and_evaluate(Path(r'../../saved_runs\first_run_max\2022-03-12_0_73-40-40-30-20-10-4'), \
-    #     Path(r'../../data/preprocessed_frames/scaled_angle'))
+    # do_train_run(Path(r'../../data/preprocessed_frames/scaled_angle'))
+    load_training_run_and_evaluate(Path(r'..\..\saved_runs\first_run_max\2022-03-12_0_72-40-40-30-20-10-4'), \
+        Path(r'../../data/preprocessed_frames/scaled_angle'))

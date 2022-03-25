@@ -7,7 +7,7 @@ from preprocessing.preprocessing_functions import create_X
 from modeling.helper import softmax2one_hot
 
 
-class Application():
+class PredictionHandler():
 
     def __init__(self, network: FCNN, preproc_params: Preprocessing_parameters, observation_window: int = 30,
                  emitting_number: int = 5, set_no_consider: int = 5):
@@ -27,24 +27,22 @@ class Application():
         #self.events.extend(['buffer'] * (self.preproc_params.num_timesteps - 1))
         self.events.extend(['idle'] * (self.preproc_params.num_timesteps - 1))
 
-    def make_prediction_for_csv(self, frames):
-        # TODO: resampling before input
-        frames_preproc, _ = create_X(frames, self.preproc_params)
+    def make_prediction_for_csv(self, resampled_df: pd.DataFrame):
+        frames_preproc, _ = create_X(resampled_df, self.preproc_params)
         frames_preproc = self.network.scaler.transform(frames_preproc)
         self.network.forward_prop(frames_preproc)
         self.prediction = softmax2one_hot(self.network.O[-1].T)
 
-    def make_prediction_for_live(self, frames):
-        if len(frames) == self.preproc_params.num_timesteps:
-            # TODO: resampling before input
-            frames_preproc, _ = create_X(frames, self.preproc_params)
-            frames_preproc = self.network.scaler.transform(frames_preproc)
-            self.network.forward_prop(frames_preproc)
-            self.prediction = softmax2one_hot(self.network.O[-1].T)
-        else:
-            print("not enough frames yet")
+    def make_prediction_for_live(self, resampled_df: pd.DataFrame) -> np.array: 
+        print(resampled_df)
+        print("net_size", self.preproc_params.num_timesteps)
+        frames_preproc, _ = create_X(resampled_df, self.preproc_params)
+        frames_preproc = self.network.scaler.transform(frames_preproc)
+        self.network.forward_prop(frames_preproc)
+        self.prediction = softmax2one_hot(self.network.O[-1].T)
+        return self.prediction
 
-    def compute_events(self, prediction: np.array):
+    def compute_events(self, prediction: np.array) -> str:
         predicted_value = np.argmax(prediction)
         print(predicted_value)
         self.iterated.append(predicted_value)
@@ -58,7 +56,6 @@ class Application():
                 counter = self.iterated.count(predicted_value)
                 if counter >= self.emitting_number:
                     self.events.append(self.dictionary[predicted_value])
-                    # TODO: if Live Mode -> handle slideshow
                     print(self.dictionary[predicted_value])
                     # set counter to number of idles before a gesture can be detected:
                     self.no_consider = self.set_no_consider
@@ -68,6 +65,8 @@ class Application():
             else:
                 #self.events.append("gesture still happening")
                 self.events.append("idle")
+            
+        return self.events[-1]
 
     def events_to_csv(self, frames:pd.DataFrame, output_path:str):
         events_df = pd.DataFrame(self.events)
@@ -77,7 +76,7 @@ class Application():
         print("events exported to %s" % output_path)
 
 
-def create_Application():
+def create_PredictionHandler():
 
     mediapipe_colums_for_diff = [
         # "left_shoulder_x", "left_shoulder_y",
@@ -95,9 +94,9 @@ def create_Application():
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path('../../saved_runs/first_run_max/2022-03-12_0_72-40-40-30-20-10-4')
+    network_path = Path(r'../../saved_runs\first_run_max\2022-03-12_0_72-40-40-30-20-10-4')
     network = FCNN.load_run(network_path)
 
-    my_model = Application(network, preproc_params)
+    pred_handler = PredictionHandler(network, preproc_params)
 
-    return my_model
+    return pred_handler

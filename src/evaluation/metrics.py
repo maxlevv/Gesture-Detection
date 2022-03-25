@@ -36,7 +36,7 @@ def calc_confusion_matrix(h: np.array, y: np.array):
 
     for i in range(n):
         for j in range(n):
-            counter = ((h_onehot[:,i] == 1) & (y[:,j]) == 1).sum()
+            counter = ((h_onehot[:,i] == 1) & ((y[:,j]) == 1)).sum()
             matrix[i,j] = counter
 
     return matrix

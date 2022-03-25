@@ -2,15 +2,15 @@ import numpy as np
 from typing import List, Dict, Tuple, Callable
 import matplotlib.pyplot as plt
 from pathlib import Path
-from gradient_checking import check_gradient, check_gradient_of_neural_net
+from modeling.gradient_checking import check_gradient, check_gradient_of_neural_net
 from tqdm import tqdm
-from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
-from activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
-from feature_scaling import StandardScaler
-from save_and_load import save_run, load_run
+from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
+from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
+from modeling.feature_scaling import StandardScaler
+from modeling.save_and_load import save_run, load_run
 from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
 from evaluation.evaluate import evaluate_neural_net 
-from helper import softmax2one_hot
+from modeling.helper import softmax2one_hot
 from modeling import gradient_checking
 
 
