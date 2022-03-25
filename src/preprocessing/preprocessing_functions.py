@@ -25,7 +25,6 @@ mediapipe_colums_for_diff = [
 
 mediapipe_columns_for_sum = mediapipe_colums_for_diff
 
-
 class Labels(Enum):
     idle = 0
     swipe_right = 1
@@ -40,12 +39,48 @@ class Labels(Enum):
         # this is the notation of the one hot encoded ground truth columns in the dataframe
         return ['gt_' + label_abbreviation for label_abbreviation in ['idle', 'sr', 'sl', 'r']]
 
+class LabelsMandatory(Enum):
+    idle = 0
+    swipe_right = 1
+    swipe_left = 2
+    rotate = 3
+
+    def get_label_list() -> List[str]:
+        # currently not used
+        return [str(label.name) for label in LabelsMandatory]
+
+    def get_column_names() -> List[str]:
+        # this is the notation of the one hot encoded ground truth columns in the dataframe
+        return ['gt_' + label_abbreviation for label_abbreviation in ['idle', 'sr', 'sl', 'r']]
+
+
+class LabelsOptional(Enum):
+    idle = 0
+    swipe_right = 1
+    swipe_left = 2
+    rotate = 3
+    rotate_left = 4
+    swipe_up = 5
+    swipe_down = 6
+    pinch = 7
+    spread = 8
+    flip_table = 9
+    point = 10
+
+    def get_label_list() -> List[str]:
+        # currently not used
+        return [str(label.name) for label in LabelsOptional]
+
+    def get_column_names() -> List[str]:
+        return ['gt_' + label_abbreviation for label_abbreviation
+                in ['idle', 'sr', 'sl', 'r', 'rl', 'su', 'sd', 'pin', 'spr', 'ft', 'p']]
+
 
 class Preprocessing_parameters():
-    def __init__(self, num_shifts: int, num_timesteps: int, 
-                difference_mode: str = None, mediapipe_columns_for_diff: List[str] = None,
-                summands_pattern: List[int] = None, mediapipe_columns_for_sum: List[str] = None,
-                forearm_angle: bool = True):
+    def __init__(self, num_shifts: int, num_timesteps: int,
+                 difference_mode: str = None, mediapipe_columns_for_diff: List[str] = None,
+                 summands_pattern: List[int] = None, mediapipe_columns_for_sum: List[str] = None,
+                 forearm_angle: bool = True):
         self.num_shifts = num_shifts
         self.num_timesteps = num_timesteps
         self.difference_mode = difference_mode
@@ -53,7 +88,7 @@ class Preprocessing_parameters():
         self.summands_pattern = summands_pattern
         self.mediapipe_columns_for_sum = mediapipe_columns_for_sum
         self.forearm_angle = forearm_angle
-    
+
     def add_new_columns_to_column_lists(self, column_names: List[str]):
         # only add to cumsum list
  
@@ -135,7 +170,6 @@ def calc_differences(df: pd.DataFrame, preproc_params: Preprocessing_parameters)
 
     # create a df with only the columns which should be considered in calculating the diff
     df_for_diff = extract_features(df, preproc_params.mediapipe_columns_for_diff)
-
 
     # number of samples in X
     num_samples = math.floor(
@@ -338,7 +372,45 @@ def calc_forearm_angle(df: pd.DataFrame):
     return df
 
 
-def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_timesteps: int, num_shifts: int) -> np.array:
+def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_parameters):
+    df = df.copy()
+
+    num_timesteps = preproc_params.num_timesteps
+    num_shifts = preproc_params.num_shifts
+    num_samples = math.floor(
+        (df.shape[0] - num_timesteps + num_shifts) / num_shifts)
+
+    X = np.zeros((num_samples, 4))
+
+    shoulder_x = df[["right_shoulder_x", "left_shoulder_x"]].to_numpy()
+    shoulder_y = df[["right_shoulder_y", "left_shoulder_y"]].to_numpy()
+    wrist_x = df[["right_wrist_x", "left_wrist_x"]].to_numpy()
+    wrist_y = df[["right_wrist_y", "left_wrist_y"]].to_numpy()
+
+    # Wähle den nten Frame in jedem Fenster zur Differenzberechnung
+    n = num_timesteps
+    select_position = n - 1
+    for i in range(num_samples):
+        selection_index = i * num_shifts + select_position
+
+        x_diff = np.subtract(shoulder_x[selection_index], wrist_x[selection_index])
+        y_diff = np.subtract(shoulder_y[selection_index], wrist_y[selection_index])
+
+        X[i, 0] = x_diff[0]
+        X[i, 1] = y_diff[0]
+        X[i, 2] = x_diff[1]
+        X[i, 3] = y_diff[1]
+
+        X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[selection_index: selection_index, :])
+
+    X_df = pd.DataFrame(data=X, columns=["shoulder_wrist_right_x", "shoulder_wrist_right_y",
+                                         "shoulder_wrist_left_x", "shoulder_wrist_left_y"])
+
+    return X, X_df
+
+
+def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_timesteps: int,
+                                             num_shifts: int) -> np.array:
     num_samples = math.floor(
         (ground_truth_df.shape[0] - num_timesteps + num_shifts) / num_shifts)
 
@@ -374,6 +446,7 @@ def replace_str_label_by_one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
         df (pd.DataFrame): needs to have the str label in the 'ground_truth' column
     """
     # turn str label into int
+
     def ground_truth_str_to_int_mapping(x): return Labels[x].value
     df['ground_truth_int'] = df['ground_truth']
     df['ground_truth_int'] = df['ground_truth_int'].apply(
@@ -399,7 +472,9 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
     num_samples = math.floor(
         (df.shape[0] - preproc_params.num_timesteps + preproc_params.num_shifts) / preproc_params.num_shifts)
 
-    # note that forearm_angle is different to differences and cumsum, as is on coordinate level and needs to go through diff or cumsum 
+    X_shoulder_wrist, X_shoulder_wrist_df = shoulder_wrist_difference(df, preproc_params)
+
+    # note that forearm_angle is different to differences and cumsum, as is on coordinate level and needs to go through diff or cumsum
     if preproc_params.forearm_angle:
         df = calc_forearm_angle(df)
 
@@ -419,7 +494,10 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
     
     
 
-    return np.c_[X_diff, X_sum].round(6), pd.concat([X_diff_df, X_sum_df], axis=1).round(6)
+    X_mode = np.c_[X_diff, X_sum].round(6)
+    X_mode_df = pd.concat([X_diff_df, X_sum_df], axis=1).round(6)
+
+    return np.c_[X_mode, X_shoulder_wrist].round(6), pd.concat([X_mode_df, X_shoulder_wrist_df], axis=1).round(6)
 
 
 def create_y(df: pd.DataFrame, preproc_params : Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
@@ -458,18 +536,30 @@ def preprocessing(labeled_frame_file_path: Path, preproc_params: Preprocessing_p
 
     return nn_input, nn_input_df
 
-
-def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_folder_path: Path, preproc_params: Preprocessing_parameters):
+# train_val_test /in {'train', 'val', 'test'}
+def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_folder_path: Path, preproc_params: Preprocessing_parameters,
+                         train_val_test: str = 'train'):
     """gets all '*_labeled.csv' files under the specified folder, does preprocessing with the specified parameters and saves it in the other specified folder.
     Args:
         labeled_frames_folder_path (Path): load folder topath
         preprocessed_frames_folder_path (Path): to folder path
     """
-    for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob('**/*_labeled.csv')):
-        _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
+    err_files = []
+    search_ending = '**/*_' + train_val_test + '_labeled.csv'
+    for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob(search_ending)):
+        print('Now on file: ', labeled_csv_file_path)
+        try:
+            if 'mandatory' in str(labeled_csv_file_path):
+                continue
+            _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
-        nn_input_df.to_csv(preprocessed_frames_folder_path /
-                           labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
+            nn_input_df.to_csv(preprocessed_frames_folder_path /
+                              labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
+        except Exception as e:
+            print("error in file", labeled_csv_file_path, e)
+            err_files.append((labeled_csv_file_path, e))
+    
+    print('error in files: \n', err_files)
 
 
 
@@ -480,10 +570,21 @@ if __name__ == '__main__':
     # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=1, num_timesteps=7, # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff, 
+        num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-        r'../../data\preprocessed_frames\scaled_angle'), preproc_params)
+    mandatory_or_optional = 'optional'
+    if mandatory_or_optional == 'mandatory':
+        Labels = LabelsMandatory
+
+        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+            r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
+    elif mandatory_or_optional == 'optional':
+        Labels = LabelsOptional
+
+        # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+        #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
+        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+            r'../../data\preprocessed_frames\final\validation\optional'), preproc_params, train_val_test='val')
 
     print('done')
