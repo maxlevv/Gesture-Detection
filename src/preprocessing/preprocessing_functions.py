@@ -25,6 +25,20 @@ mediapipe_colums_for_diff = [
 
 mediapipe_columns_for_sum = mediapipe_colums_for_diff
 
+class Labels(Enum):
+    idle = 0
+    swipe_right = 1
+    swipe_left = 2
+    rotate = 3
+
+    def get_label_list() -> List[str]:
+        # currently not used
+        return [str(label.name) for label in Labels]
+
+    def get_column_names() -> List[str]:
+        # this is the notation of the one hot encoded ground truth columns in the dataframe
+        return ['gt_' + label_abbreviation for label_abbreviation in ['idle', 'sr', 'sl', 'r']]
+
 class LabelsMandatory(Enum):
     idle = 0
     swipe_right = 1
@@ -66,7 +80,7 @@ class Preprocessing_parameters():
     def __init__(self, num_shifts: int, num_timesteps: int,
                  difference_mode: str = None, mediapipe_columns_for_diff: List[str] = None,
                  summands_pattern: List[int] = None, mediapipe_columns_for_sum: List[str] = None,
-                 forearm_angle: bool = True, select_mandatory_label: bool = True):
+                 forearm_angle: bool = True):
         self.num_shifts = num_shifts
         self.num_timesteps = num_timesteps
         self.difference_mode = difference_mode
@@ -74,7 +88,6 @@ class Preprocessing_parameters():
         self.summands_pattern = summands_pattern
         self.mediapipe_columns_for_sum = mediapipe_columns_for_sum
         self.forearm_angle = forearm_angle
-        self.select_mandatory_label = select_mandatory_label
 
     def add_new_columns_to_column_lists(self, column_names: List[str]):
         # only add to cumsum list
@@ -544,18 +557,18 @@ if __name__ == '__main__':
 
     preproc_params = Preprocessing_parameters(
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
-        summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum,
-        select_mandatory_label = False)
+        summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    if preproc_params.select_mandatory_label == True:
+    mandatory_or_optional = 'mandatory'
+    if mandatory_or_optional == 'mandatory':
         Labels = LabelsMandatory
 
         handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), Path(
             r'../../data\preprocessed_frames\test_run_max'), preproc_params, train_val_test='train')
-    else:
+    elif mandatory_or_optional == 'optional':
         Labels = LabelsOptional
 
         handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-            r'../../data\preprocessed_frames\test_run_max'), preproc_params, train_val_test='val')
+            r'../../data\preprocessed_frames\test_run_max'), preproc_params, train_val_test='train')
 
     print('done')

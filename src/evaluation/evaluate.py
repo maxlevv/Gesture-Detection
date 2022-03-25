@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import TYPE_CHECKING, List
 from evaluation.metrics import generate_confusion_plot
-from preprocessing.preprocessing_functions import Labels
+from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
 if TYPE_CHECKING:
     from modeling.neural_network import FCNN
 
@@ -25,9 +25,10 @@ def generate_loss_plot(neural_net: FCNN, ax: plt.axes):
     ax.set_title('loss')
     ax.legend(loc='upper right')
 
-def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str):
+def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Mandatory_Optional):
     # num_classes = neural_net.layer_list[-1]  wäre auch möglich
 
+    Labels = Labels_Mandatory_Optional
     if mode == 'train':
         f1_np = np.array(neural_net.f1_score_hist)
         for label in Labels:
@@ -58,14 +59,21 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
     neural_net.forward_prop(X_val)
     h_val = neural_net.O[-1].T
 
+    if y_train.shape[1] == 4:
+        Labels = LabelsMandatory
+    elif y_train.shape[1] == 11:
+        Labels = LabelsOptional
+    else:
+        raise Exception("number of Labels is not 4 (mandatory) or 11 (optional)")
+
     fig, axs = plt.subplots(2, 4, figsize=(60, 40))  # TODO: figsize doesnt change anything if changed, fig is humongous
     generate_confusion_plot(h_train, y_train, ax=axs[0, 0], title='confusion_matrix_train')
     generate_confusion_plot(h_val, y_val, ax=axs[1, 0], title='confusion_matrix_val')
 
     generate_loss_plot(neural_net, ax=axs[1, 1])
 
-    generate_f1_score_plot(neural_net, ax=axs[0, 2], mode='train')
-    generate_f1_score_plot(neural_net, ax=axs[1, 2], mode='val')
+    generate_f1_score_plot(neural_net, ax=axs[0, 2], mode='train', Labels_Mandatory_Optional=Labels)
+    generate_f1_score_plot(neural_net, ax=axs[1, 2], mode='val', Labels_Mandatory_Optional=Labels)
 
     generate_acc_plot(neural_net, ax=axs[0, 1])
 
