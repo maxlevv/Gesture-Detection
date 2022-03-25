@@ -10,6 +10,7 @@ import time
 import threading
 
 from preprocessing.live_preprocessing import LiveDfGenerator
+from slideshow.prediction_functions_jonas_mod import create_PredictionHandler, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera
 from process_videos.helpers.colors import bcolors
 
@@ -48,12 +49,28 @@ def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multipr
 
 def call_resample(mediapipe_queue: multiprocessing.Queue, resample_queue: multiprocessing.Queue, 
                   live_df_generator: LiveDfGenerator):
-    # this is the rasample process
+    # this is the resample process
 
     while True:
         frame, timestamp = mediapipe_queue.get(block=True)
         df = live_df_generator.generate_window_df(new_data=None, timestamp=timestamp, frame=frame)
         resample_queue.put(df)
+
+
+def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, prediction_queue: multiprocessing.Queue, 
+                                        event_queue: multiprocessing.Queue, prep_handler: PredictionHandler, sync_queue: multiprocessing.Queue):
+    # this is the process function for preprocessing and forward prop and event compuation
+    sync_queue.put('last process is running')
+
+    while True:
+        resampled_df = resample_queue.get(block=True)
+        if resampled_df is None:
+            continue
+        prediction = prep_handler.make_prediction_for_live(resampled_df)
+        # event = prep_handler.compute_events(prediction)
+
+        prediction_queue.put(prediction)
+        # event_queue.put(event)
 
 
 def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
@@ -62,15 +79,16 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
     frames_queue = multiprocessing.Queue()
     mediapipe_queue = multiprocessing.Queue()
     resample_queue = multiprocessing.Queue()
-    preprocessing_queue = multiprocessing.Queue()
-
-    test_queue = multiprocessing.Queue()
-
+    prediction_queue = multiprocessing.Queue()
+    event_queue = multiprocessing.Queue()
+    sync_queue = multiprocessing.Queue()
 
     live_df_generator = LiveDfGenerator(
             relevant_signals_dict_yaml_path = relevant_signals_dict_yaml_path,
             window_size=window_size, 
-            skip_value=3)
+            skip_value=1)
+
+    pred_handler = create_PredictionHandler()
 
     with open(relevant_signals_dict_yaml_path, "r") as yaml_file:
         mediapipe_tracking_points_dict = yaml.safe_load(yaml_file)
@@ -81,36 +99,63 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
     resample_process = multiprocessing.Process(target=call_resample, args=(mediapipe_queue, resample_queue, live_df_generator))
     resample_process.daemon = True
     resample_process.start()
+    preproc_and_prediction_process = multiprocessing.Process(target=call_preprocessing_and_forward_prop, args=(resample_queue, prediction_queue, event_queue, pred_handler, sync_queue))
+    preproc_and_prediction_process.daemon = True
+    preproc_and_prediction_process.start()
+
 
     threaded_camera = ThreadedCamera()
 
     prev_timestamp = 0
     it_counter = -1
     while True:
-        it_counter += 1
-
         if not threaded_camera.status:
             continue
+        it_counter += 1
 
         image, timestamp = threaded_camera.get_from_queue()
-        print('diff timestamp in main loop', timestamp - prev_timestamp)
+        # print('diff timestamp in main loop', timestamp - prev_timestamp)
         prev_timestamp = timestamp
-        if it_counter % 2 == 1:
+        if it_counter % 5 == 1:
             pass
 
         frames_queue.put((image, timestamp))
+        
+        # try to wait for the first df to go through to avoid for the threaded camera a stuff ervery thing in before processes are up
+        if it_counter == 1:
+            statement = sync_queue.get(block=True)
+            print(statement)
+        
+        # print("it_count", it_counter)
 
-        df = resample_queue.get(block=True)
+        # spit out the result every 100th iteration
+        # if (it_counter+1) % 100 == 0:
+        #     while True:
+        #         df = resample_queue.get(block=True)
+        #         print(f"{bcolors.FAIL}{df}{bcolors.ENDC}")
+        #         if not df is None:
+        #             break
+            
+        # df = resample_queue.get(block=True)
+        # TODO: problem: the block here blocks everything, which destroys the purpose of multiprocessing
+
+        try:
+            pred = prediction_queue.get(block=False)
+            print(f'{bcolors.OKBLUE}Prediction: {pred}{bcolors.ENDC}')
+        except Exception as e:
+            pass
 
         print(f"frames_queue size: {frames_queue.qsize()}\n" + \
               f"mediapipe_queue size: {mediapipe_queue.qsize()}\n" + \
-              f"resample_queue size: {resample_queue.qsize()}\n")
+              f"resample_queue size: {resample_queue.qsize()}\n" + \
+              f"prediction_queue size: {prediction_queue.qsize()}\n" + \
+              f"event_queue size: {event_queue.qsize()}\n")
 
 
 def test():
     run_live_mode(
         relevant_signals_dict_yaml_path=Path(r'../../src\preprocessing\relevant_keypoint_mapping.yml'),
-        window_size=6,
+        window_size=7,
         flip_bool=False
     )
 

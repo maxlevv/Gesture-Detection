@@ -200,12 +200,14 @@ def correct_angle_boundary_diff(diff_np: np.array):
 
 
 def scale_angle_diff(angle_diff_np: np.array, window_start_index: int, num_timesteps: int, df, side: str):
+    print("angle_diff_np, window_start_index, num_timesteps, df, side", angle_diff_np, window_start_index, num_timesteps, df, side)
     if side == 'right':
         r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'right_forearm_r'].to_numpy()
     elif side == 'left':
         r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'left_forearm_r'].to_numpy()
     
     r_mid = (r[1:] + r[:-1]) / 2
+    print('r_mid', r_mid)
     r_mid_scaled = scale_to_body_size_and_dist_to_camera(r_mid, df.iloc[window_start_index: window_start_index + num_timesteps - 1, :])
     return angle_diff_np * np.power(r_mid_scaled, 6) * 100
 
@@ -254,6 +256,8 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
     X = np.zeros((num_samples, num_features))
 
+    print("num_samples, num_features", num_samples, num_features)
+
     for i in range(num_samples):
         window_start_index = i * num_shifts
         window_np = data[window_start_index: window_start_index + num_timesteps, :]
@@ -279,7 +283,6 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
         # apply scaling to diff here, as the angle is now multiplied by projected wrist to elbow dist, which needs to be scaled
         X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
-
 
     # creating the df
     column_cumsum_names = [orig_column +
@@ -413,6 +416,8 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
         X_sum, X_sum_df = cumulative_sum(df, preproc_params)
     else:
         X_sum, X_sum_df = np.array([], shape=(num_samples, 0)), None 
+    
+    
 
     return np.c_[X_diff, X_sum].round(6), pd.concat([X_diff_df, X_sum_df], axis=1).round(6)
 

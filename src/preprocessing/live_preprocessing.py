@@ -90,13 +90,13 @@ class LiveDfGenerator:
         if self.skip_status > 0:
             self.remove_oldest_frame_and_timestamp()
             self.skip_status += 1
-            print(f'skip time: {time.perf_counter() - skip_time}')
+            # print(f'skip time: {time.perf_counter() - skip_time}')
             return None
         self.skip_status += 1
         
         df = self.to_df()
         diff = np.diff(np.array(list(df.index)))
-        print(f"{bcolors.WARNING}{diff}{bcolors.ENDC}")
+        # print(f"{bcolors.WARNING}{diff}{bcolors.ENDC}")
         
         df = self.resample(df)
         output_df = df[-self.window_size:]
