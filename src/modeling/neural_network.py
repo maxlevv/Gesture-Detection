@@ -142,6 +142,39 @@ class FCNN:
         self.Z = None       
         self.loss = None
 
+    
+
+    def clear_attributes(self):
+        # for grid search running
+
+        self.W = list()     # weights marixes
+        self.dW = list()    # derivative of the whole problem with respect to W structured like W
+        # outputs of each layer (not sure if this will be used)
+        self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
+        self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
+        self.loss = None    # loss for specific data
+    
+    
+        self.weight_decay = None
+        self.lambd = None
+
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
+        self.loss_hist = [] 
+        self.acc_hist = [] 
+        self.val_acc_hist = []    
+        self.f1_score_hist = []
+        self.f1_score_val_hist = []
+
+        self.num_samples = None
+        self.idle_weight = None
+        self.non_idle_weight = None
+
 
     def check_and_correct_shapes(self, X:np.array, Y_g:np.array):
         self.check_forward_prop_requirements(X)
