@@ -81,6 +81,8 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
         fig.savefig(save_plot_path)
     else:
         fig.show()
+    
+    plt.close(fig)
 
     return fig, axs
 

@@ -90,7 +90,7 @@ def calc_metrics(h: np.array, y: np.array):
 
     # accuracy
     conf_matrix = calc_confusion_matrix(h, y)
-    plot_confusion_matrix(conf_matrix, verbose=True, Labels_Mandatory_Optional=Labels)
+    plot_confusion_matrix(conf_matrix, verbose=False, Labels_Mandatory_Optional=Labels)
     f1_scores = []
     precisions = []
     recalls = []
