@@ -234,14 +234,14 @@ def correct_angle_boundary_diff(diff_np: np.array):
 
 
 def scale_angle_diff(angle_diff_np: np.array, window_start_index: int, num_timesteps: int, df, side: str):
-    print("angle_diff_np, window_start_index, num_timesteps, df, side", angle_diff_np, window_start_index, num_timesteps, df, side)
+    # print("angle_diff_np, window_start_index, num_timesteps, df, side", angle_diff_np, window_start_index, num_timesteps, df, side)
     if side == 'right':
         r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'right_forearm_r'].to_numpy()
     elif side == 'left':
         r = df.loc[window_start_index: window_start_index + num_timesteps - 1 , 'left_forearm_r'].to_numpy()
     
     r_mid = (r[1:] + r[:-1]) / 2
-    print('r_mid', r_mid)
+    # print('r_mid', r_mid)
     r_mid_scaled = scale_to_body_size_and_dist_to_camera(r_mid, df.iloc[window_start_index: window_start_index + num_timesteps - 1, :])
     return angle_diff_np * np.power(r_mid_scaled, 6) * 100
 
@@ -290,7 +290,7 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
     X = np.zeros((num_samples, num_features))
 
-    print("num_samples, num_features", num_samples, num_features)
+    # print("num_samples, num_features", num_samples, num_features)
 
     for i in range(num_samples):
         window_start_index = i * num_shifts
@@ -549,8 +549,8 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
     for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob(search_ending)):
         print('Now on file: ', labeled_csv_file_path)
         try:
-            if 'mandatory' in str(labeled_csv_file_path):
-                continue
+            # if 'mandatory' in str(labeled_csv_file_path):
+            #     continue
             _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
             nn_input_df.to_csv(preprocessed_frames_folder_path /
@@ -573,18 +573,12 @@ if __name__ == '__main__':
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    mandatory_or_optional = 'optional'
-    if mandatory_or_optional == 'mandatory':
-        Labels = LabelsMandatory
+    
+    Labels = LabelsOptional
 
-        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-            r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
-    elif mandatory_or_optional == 'optional':
-        Labels = LabelsOptional
-
-        # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-        #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
-        handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-            r'../../data\preprocessed_frames\final\validation\optional'), preproc_params, train_val_test='val')
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+    #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), Path(
+        r'../../data\preprocessed_frames\final\validation\mandatory_data'), preproc_params, train_val_test='val')
 
     print('done')
