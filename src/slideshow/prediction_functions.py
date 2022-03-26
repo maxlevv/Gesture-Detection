@@ -46,7 +46,7 @@ class Application():
 
     def compute_events(self, prediction: np.array):
         predicted_value = np.argmax(prediction)
-        print(predicted_value)
+        # print(predicted_value)
         self.iterated.append(predicted_value)
         self.iterated.pop(0)
         if predicted_value == 0:

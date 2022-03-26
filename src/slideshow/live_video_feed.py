@@ -1,4 +1,8 @@
+import asyncio
 import os
+import queue
+import threading
+import time
 from pathlib import Path
 
 import cv2
@@ -31,37 +35,32 @@ async def index(request):
 @app.websocket("/events")
 async def emitter(_request, ws):
     print("websocket connection opened")
+    while True:
+        print("emitting 'right'")
+        # app.add_signal(event="right")
+        try:
+            gesture = event_queue.get(block=False)
+            # await ws.send(gesture)
+            print('got ', gesture)
+            await ws.send(gesture)
+            await asyncio.sleep(2)
+        except queue.Empty:
+            # no gesture
+            pass
 
-    success = True
-    sufficient_frames = False
-    nb_received_frames = 0
-    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        while cap.isOpened() and success:
+    #
+    #     print("emitting 'rotate'")
+    #     await ws.send("rotate")
+    #     await asyncio.sleep(2)
+    # #
+    #     print("emitting 'left'")
+    #     await ws.send("left")
+    #     await asyncio.sleep(2)
 
-            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
-                                                         pose)
 
-            frames_df.set_index("timestamp", inplace=True)
-            if curr_frame:  # mediapipe recognized features in frame
-
-                if not sufficient_frames:
-                    nb_received_frames += 1
-                    if nb_received_frames >= nb_frames:
-                        sufficient_frames = True
-
-                idx_oldest_frame = frames_df.index.min()
-                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
-                frames_df.loc[curr_timestamp] = curr_frame
-                frames_df.sort_index(inplace=True)
-                frames_df.reset_index(inplace=True)
-                # todo: resampling
-
-                if sufficient_frames:
-                    my_model.make_prediction_for_live(frames_df)
-                    my_model.compute_events(my_model.prediction)
-                    gesture = my_model.events[-1]
-                    if gesture != 'idle':
-                        await ws.send(gesture)
+        # # app.add_signal(event="right")
+        # await ws.send('rotate')
+        # await asyncio.sleep(2)
 
 
 def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index: int = 0):
@@ -83,7 +82,7 @@ def config_mediapipe(mp4_path: str = None, live_feed: bool = False, camera_index
     return mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap
 
 
-def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, pose):
+def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, pose, show_video):
     success, image = cap.read()
     if not success:
         return
@@ -113,9 +112,17 @@ def call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap, 
             frame.append(results.pose_landmarks.landmark[i].visibility)  # TODO: change to confidence, if needed
     return timestamp, frame
 
+def detect_gestures2(event_queue: queue.Queue, gesture_sanic_mapping: dict):
+    time.sleep(1)
+    event_queue.put("right")
+    time.sleep(1)
+    event_queue.put("right")
+    time.sleep(1)
+    event_queue.put("right")
+    time.sleep(1)
+    event_queue.put("right")
 
-if __name__ == "__main__":
-    # app.run(host="0.0.0.0", debug=True)
+def detect_gestures(event_queue: queue.Queue, gesture_sanic_mapping: dict):
 
     my_model = create_Application()
     my_model.initialize_events()
@@ -133,5 +140,62 @@ if __name__ == "__main__":
     frames_df = pd.DataFrame(np.zeros(shape=(nb_frames, 32 * 4)), columns=columns)
     frames_df.loc[:, "timestamp"] = np.arange(nb_frames, dtype=float)
     # frames_df.set_index("timestamp", inplace=True)
+
+    success = True
+    sufficient_frames = False
+    nb_received_frames = 0
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened() and success:
+
+            curr_timestamp, curr_frame, = call_mediapipe(mp_drawing, mp_drawing_styles, mp_pose, KEYPOINT_NAMES, cap,
+                                                         pose, show_video)
+
+            try:
+                frames_df.set_index("timestamp", inplace=True)
+            except KeyError:
+                # already index
+                pass
+            if curr_frame:  # mediapipe recognized features in frame
+                if not sufficient_frames:
+                    nb_received_frames += 1
+                    if nb_received_frames >= nb_frames:
+                        sufficient_frames = True
+
+                idx_oldest_frame = frames_df.index.min()
+                frames_df.rename(index={idx_oldest_frame: curr_timestamp}, inplace=True)
+                frames_df.loc[curr_timestamp] = curr_frame
+                frames_df.sort_index(inplace=True)
+                frames_df.reset_index(inplace=True)
+                # todo: resampling
+
+                if sufficient_frames:
+                    my_model.make_prediction_for_live(frames_df)
+                    my_model.compute_events(my_model.prediction)
+                    gesture = my_model.events[-1]
+                    if gesture != 'idle':
+                        print(gesture)
+                        event = gesture_sanic_mapping[gesture]
+                        event_queue.put(event)
+                        print(event_queue.queue)
+
+
+if __name__ == "__main__":
+    event_queue = queue.Queue()
+
+    gesture_sanic_mapping = {
+        'swipe_right': 'right',
+        'swipe_left': 'left',
+        'rotate': 'rotate',
+        'pinch': 'zoom_out',
+        'spread': 'zoom_in'
+    }
+
+    live_stream_thread = threading.Thread(target=detect_gestures2, args=(event_queue,gesture_sanic_mapping))
+    live_stream_thread.daemon = True
+    live_stream_thread.start()
+
+    app.run(host="0.0.0.0", debug=True)
+    # print('done')
+
 
     # cap.release()
