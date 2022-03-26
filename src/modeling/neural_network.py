@@ -2,15 +2,15 @@ import numpy as np
 from typing import List, Dict, Tuple, Callable
 import matplotlib.pyplot as plt
 from pathlib import Path
-from gradient_checking import check_gradient, check_gradient_of_neural_net
+from modeling.gradient_checking import check_gradient, check_gradient_of_neural_net
 from tqdm import tqdm
-from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
-from activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
-from feature_scaling import StandardScaler
-from save_and_load import save_run, load_run
+from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
+from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
+from modeling.feature_scaling import StandardScaler
+from modeling.save_and_load import save_run, load_run
 from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
 from evaluation.evaluate import evaluate_neural_net 
-from helper import softmax2one_hot
+from modeling.helper import softmax2one_hot
 from modeling import gradient_checking
 
 
@@ -141,6 +141,39 @@ class FCNN:
         self.O = None
         self.Z = None       
         self.loss = None
+
+    
+
+    def clear_attributes(self):
+        # for grid search running
+
+        self.W = list()     # weights marixes
+        self.dW = list()    # derivative of the whole problem with respect to W structured like W
+        # outputs of each layer (not sure if this will be used)
+        self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
+        self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
+        self.loss = None    # loss for specific data
+    
+    
+        self.weight_decay = None
+        self.lambd = None
+
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
+        self.loss_hist = [] 
+        self.acc_hist = [] 
+        self.val_acc_hist = []    
+        self.f1_score_hist = []
+        self.f1_score_val_hist = []
+
+        self.num_samples = None
+        self.idle_weight = None
+        self.non_idle_weight = None
 
 
     def check_and_correct_shapes(self, X:np.array, Y_g:np.array):

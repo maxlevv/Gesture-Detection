@@ -4,7 +4,7 @@ from pathlib import Path
 from modeling.neural_network import FCNN
 from preprocessing.preprocessing_functions import Preprocessing_parameters
 from preprocessing.preprocessing_functions import create_X
-from helper import softmax2one_hot
+from modeling.helper import softmax2one_hot
 
 
 class Application():
