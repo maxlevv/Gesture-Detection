@@ -230,6 +230,9 @@ def correct_angle_boundary_diff(diff_np: np.array):
     diff_np[np.where(diff_np > np.pi)[0]] = diff_np[np.where(diff_np > np.pi)[0]] - 2 * np.pi
     diff_np[np.where(diff_np < -np.pi)[0]] = diff_np[np.where(diff_np < -np.pi)[0]] + 2 * np.pi
 
+    if (np.abs(diff_np) > np.pi).any():
+        print('here')
+
     return diff_np
 
 
@@ -242,8 +245,19 @@ def scale_angle_diff(angle_diff_np: np.array, window_start_index: int, num_times
     
     r_mid = (r[1:] + r[:-1]) / 2
     # print('r_mid', r_mid)
-    r_mid_scaled = scale_to_body_size_and_dist_to_camera(r_mid, df.iloc[window_start_index: window_start_index + num_timesteps - 1, :])
-    return angle_diff_np * np.power(r_mid_scaled, 6) * 100
+    r_mid_scaled = scale_to_body_size_and_dist_to_camera(r_mid*0.5, df.iloc[window_start_index: window_start_index + num_timesteps - 1, :])
+    factor = np.zeros_like(r_mid_scaled)
+    factor = np.power(r_mid_scaled, 6) * 100
+    factor[np.where(r_mid_scaled > 1)] = r_mid_scaled[np.where(r_mid_scaled > 1)]
+    transformed_angle_diff = angle_diff_np * factor
+    # set a max value
+    caped_angle_diff = np.min(np.c_[transformed_angle_diff, np.ones_like(transformed_angle_diff)*10], axis=1)
+    caped_angle_diff = np.max(np.c_[caped_angle_diff, np.ones_like(caped_angle_diff)*-10], axis=1)
+
+    # if (np.abs(caped_angle_diff) == 1000).any():
+    #     print('here')
+
+    return caped_angle_diff * 10
 
 
 def calc_angle_diff(angle_np: np.array, window_start_index: int, num_timesteps: int, df: pd.DataFrame, side: str):
@@ -579,6 +593,6 @@ if __name__ == '__main__':
     # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
     #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
     handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), Path(
-        r'../../data\preprocessed_frames\final\validation\mandatory_data'), preproc_params, train_val_test='val')
+        r'../../data\preprocessed_frames\test_angle'), preproc_params, train_val_test='train')
 
     print('done')
