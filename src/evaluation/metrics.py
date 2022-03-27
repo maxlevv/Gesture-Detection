@@ -65,16 +65,22 @@ def plot_confusion_matrix(confusion_matrix: np.array, Labels_Mandatory_Optional 
 
 # attribute Auswahl als Integer entsprechend der Nummerierung der Label in der Klasse preprocessing_functions.Labels
 def precision(confusion_matrix: np.array, attribute: int):
+    if confusion_matrix[attribute,:].sum() == 0:
+        return 0
     return confusion_matrix[attribute, attribute] / confusion_matrix[attribute,:].sum()
 
 
 def recall(confusion_matrix: np.array, attribute: int):
+    if confusion_matrix[:,attribute].sum() == 0:
+        return 0
     return confusion_matrix[attribute, attribute] / confusion_matrix[:,attribute].sum()
 
 
 def f1_score(confusion_matrix: np.array, attribute: int):
     prec = precision(confusion_matrix, attribute)
     rec = recall(confusion_matrix, attribute)
+    if (prec == 0) or (rec == 0):
+        return 0
     score = 2 * (prec * rec) / (prec + rec)
     return score
 
