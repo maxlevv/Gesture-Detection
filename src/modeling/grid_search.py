@@ -37,9 +37,9 @@ def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, s
 
     ###################################################################################################################################################
     # TODO: this needs removing
-    print(f'{bcolors.FAIL}ONLY TRAINING WITH 10000 samples! Change grid_search.py - generate_dataset(){bcolors.ENDC}')
-    X = X[:10000, :]
-    y = y[:10000, :]
+    # print(f'{bcolors.FAIL}ONLY TRAINING WITH 10000 samples! Change grid_search.py - generate_dataset(){bcolors.ENDC}')
+    # X = X[:10000, :]
+    # y = y[:10000, :]
     ###################################################################################################################################################
 
     del df
