@@ -14,7 +14,7 @@ def sigmoid(z: np.array):
         return res
 
 def sigmoid_d(z: np.array):
-        return 1 / (1 + np.e**-z) * (1 - 1 / (1 + np.e**-z))
+        return sigmoid(z) * (1 - sigmoid(z))
 
 def relu(z):
         return np.max(np.concatenate([z[:, :, np.newaxis], np.zeros((z.shape[0], z.shape[1], 1))], axis=2), axis=2)
