@@ -120,6 +120,7 @@ class FCNN:
     
 
     def init_weights(self, W:np.array=None):
+        SIZE_RANDOM_INTERVALL = 0.1  # guessed based on 40 neurons, can be inproved
 
         if W:
             self.W = W
@@ -129,7 +130,7 @@ class FCNN:
             self.W = []
             for next_layer_size, bias in zip(self.layer_list, self.bias_list):
                 # have the weights distributed from -0.5 to 0.5
-                W = np.random.rand(next_layer_size, curr_layer_size + bias) - 0.5
+                W = np.random.rand(next_layer_size, curr_layer_size + bias)* SIZE_RANDOM_INTERVALL - 0.5
                 self.W.append(W)
                 curr_layer_size = next_layer_size
 
