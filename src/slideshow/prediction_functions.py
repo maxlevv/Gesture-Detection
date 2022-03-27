@@ -46,7 +46,7 @@ class Application():
 
     def compute_events(self, prediction: np.array):
         predicted_value = np.argmax(prediction)
-        print(predicted_value)
+        # print(predicted_value)
         self.iterated.append(predicted_value)
         self.iterated.pop(0)
         if predicted_value == 0:
@@ -59,7 +59,7 @@ class Application():
                 if counter >= self.emitting_number:
                     self.events.append(self.dictionary[predicted_value])
                     # TODO: if Live Mode -> handle slideshow
-                    print(self.dictionary[predicted_value])
+                    # print(self.dictionary[predicted_value])
                     # set counter to number of idles before a gesture can be detected:
                     self.no_consider = self.set_no_consider
                 else:
@@ -95,7 +95,7 @@ def create_Application():
         num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path('../../saved_runs/first_run_max/2022-03-12_0_72-40-40-30-20-10-4')
+    network_path = Path('../../saved_runs/jonas_3_grid_gross/relu,ep=10,bs=300,lr=0.001,wd=0.001/2022-03-26_0_76-40-40-30-20-10-11')
     network = FCNN.load_run(network_path)
 
     my_model = Application(network, preproc_params)
