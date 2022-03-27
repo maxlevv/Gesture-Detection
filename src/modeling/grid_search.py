@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 
 from process_videos.helpers.colors import bcolors
 
+# import warnings
+# warnings.simplefilter('error')
+
 
 def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, select_mandatory_label: bool = True):
     df = None
@@ -84,6 +87,7 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
                         )
 
                         neural_net.clear_attributes()
+                        
 
                         neural_net.init_weights()
                         neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size,
@@ -120,14 +124,23 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
     fig.savefig('grid_search_plot.png')
 
 
-if __name__ == '__main__':
+def do_grid_search():
     train_folder_path = Path(r'../../data\preprocessed_frames\final\train')
     val_folder_path = Path(r'../../data\preprocessed_frames\final\validation')
 
     X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
 
-
-
     grid_search(X_train, y_train, X_val, y_val, scaler)
+
+
+def try_things():
+    train_folder_path = Path(r'../../data\preprocessed_frames\final\train')
+
+    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
+
+    print('done')
+
+if __name__ == '__main__':
+    do_grid_search()
 
