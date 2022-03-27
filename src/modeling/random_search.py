@@ -54,10 +54,6 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
 
 
 def random_search_multipro(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description):
-    f1_train = []
-    f1_val = []
-    x_axis = []
-
     num_iterations = 12
     num_simultaneous_processes = 6
 

@@ -60,7 +60,7 @@ def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, s
 def grid_search(X_train, y_train, X_val, y_val, scaler):
 
     # define grid
-    activation_list = ['sigmoid', 'relu', 'leaky_relu']
+    activation_list = ['leaky_relu', 'relu', 'sigmoid']
     epoch_list = [10]
     bsize_list = [300]
     lr_list = [0.001, 0.005, 0.01]
@@ -76,12 +76,17 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
             for batch_size in bsize_list:
                 for weight_decay in wdecay_list:
                     for lr in lr_list:
+
+                        print(activation_function, epochs, batch_size, weight_decay, lr)
                         # initialize the network
+                    
+                        architecture = [40, 40, 30, 20, 10, y_train.shape[1]]
+
                         neural_net = FCNN(
                             input_size=X_train.shape[1],
-                            layer_list=[40, 40, 30, 20, 10, y_train.shape[1]],
-                            bias_list=[1, 1, 1, 1, 1, 1],
-                            activation_funcs=[activation_function] * 5 + ['softmax'],
+                            layer_list=architecture,
+                            bias_list=[1] * len(architecture),
+                            activation_funcs=[activation_function] * (len(architecture) - 1) + ['softmax'],
                             loss_func='categorical_cross_entropy',
                             scaler=scaler
                         )
