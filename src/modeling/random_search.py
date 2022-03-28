@@ -19,7 +19,7 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     lr = (5 * np.power(10, random.uniform(-4, -3))).round(6)
     weight_decay = (random.choices([0, np.power(10, random.uniform(-3, -2)).round(6)], [0.25, 0.75]))[0]
     batch_size = random.choice([64, 128, 256, 512])
-    epochs = 10
+    epochs = 80
     activation_functions = ['sigmoid', 'relu', 'leaky_relu']
     activation_function = random.choice(activation_functions)
 
