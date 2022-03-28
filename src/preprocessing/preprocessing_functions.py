@@ -566,8 +566,8 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
             if only_optional_bool:
                 if 'mandatory' in str(labeled_csv_file_path):
                     continue
-            # if 'nina' in str(labeled_csv_file_path):
-            #     continue
+            if not 'nina' in str(labeled_csv_file_path):
+                continue
             _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
             nn_input_df.to_csv(preprocessed_frames_folder_path /
@@ -586,16 +586,119 @@ if __name__ == '__main__':
     #                                       num_shifts=1, num_timesteps=4, difference_mode='every')
     # nn_input_df.to_csv('nn_input_test.csv')
 
+    # preproc_params = Preprocessing_parameters(
+    #     num_shifts=1, num_timesteps=10,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
+    #     summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
     preproc_params = Preprocessing_parameters(
         num_shifts=1, num_timesteps=10,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
-        summands_pattern=[1, 0, 1, 0, 1, 0, 1, 0, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
+        summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     
     Labels = LabelsOptional
 
     # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
     #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
-        r'../../data\preprocessed_frames\window=10,cumsum=every_second\validation\optional'), preproc_params, only_optional_bool=True, train_val_test='val')
+
+    # 10 cumsum all
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=all\train\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=all\validation\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=all\validation\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
+    
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+                         Path( r'../../data\preprocessed_frames\window=10,cumsum=all\train\optional'), 
+                         preproc_params, 
+                         only_optional_bool=True, 
+                         train_val_test='train') #[(WindowsPath('../../data/labeled_frames/ready_to_train/spread/train/03-19_nina_spread_train_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/train/03-19_nina_swipe_up_train_labeled.csv'), KeyError(nan))]
+
+
+    # 10 cumsum every_second
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=every_second\train\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=every_second\validation\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=every_second\validation\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=10,cumsum=every_second\train\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='train') 
+
+    # 8 cumsum all
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=all\train\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=all\validation\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=all\validation\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=all\train\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='train') #[(WindowsPath('../../data/labeled_frames/ready_to_train/spread/train/03-19_nina_spread_train_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/train/03-19_nina_swipe_up_train_labeled.csv'), KeyError(nan))]
+
+
+    # 8 cumsum every_second
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
+    
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='train') 
 
     print('done')
