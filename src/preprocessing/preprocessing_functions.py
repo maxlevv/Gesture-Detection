@@ -291,6 +291,9 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
 
 def calc_forearm_angle(df: pd.DataFrame):
+    # copy otherwise original df will be changed
+    df = df.copy()
+
     # looking at the angle values might be confusing, as the y coordinate is quasi flipped
 
     right_wrist_x = df['right_wrist_x'].to_numpy()
