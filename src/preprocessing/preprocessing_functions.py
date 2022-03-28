@@ -230,8 +230,8 @@ def correct_angle_boundary_diff(diff_np: np.array):
     diff_np[np.where(diff_np > np.pi)[0]] = diff_np[np.where(diff_np > np.pi)[0]] - 2 * np.pi
     diff_np[np.where(diff_np < -np.pi)[0]] = diff_np[np.where(diff_np < -np.pi)[0]] + 2 * np.pi
 
-    if (np.abs(diff_np) > np.pi).any():
-        print('here')
+    # if (np.abs(diff_np) > np.pi).any():
+    #     print('here')
 
     return diff_np
 
@@ -552,7 +552,7 @@ def preprocessing(labeled_frame_file_path: Path, preproc_params: Preprocessing_p
 
 # train_val_test /in {'train', 'val', 'test'}
 def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_folder_path: Path, preproc_params: Preprocessing_parameters,
-                         train_val_test: str = 'train'):
+                         only_optional_bool: bool, train_val_test: str = 'train'):
     """gets all '*_labeled.csv' files under the specified folder, does preprocessing with the specified parameters and saves it in the other specified folder.
     Args:
         labeled_frames_folder_path (Path): load folder topath
@@ -563,7 +563,10 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
     for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob(search_ending)):
         print('Now on file: ', labeled_csv_file_path)
         try:
-            # if 'mandatory' in str(labeled_csv_file_path):
+            if only_optional_bool:
+                if 'mandatory' in str(labeled_csv_file_path):
+                    continue
+            # if 'nina' in str(labeled_csv_file_path):
             #     continue
             _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
@@ -584,15 +587,15 @@ if __name__ == '__main__':
     # nn_input_df.to_csv('nn_input_test.csv')
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
-        summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
+        num_shifts=1, num_timesteps=10,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
+        summands_pattern=[1, 0, 1, 0, 1, 0, 1, 0, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     
     Labels = LabelsOptional
 
     # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
     #     r'../../data\preprocessed_frames\final\train\optional'), preproc_params, train_val_test='train')
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), Path(
-        r'../../data\preprocessed_frames\test_angle'), preproc_params, train_val_test='train')
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), Path(
+        r'../../data\preprocessed_frames\window=10,cumsum=every_second\validation\optional'), preproc_params, only_optional_bool=True, train_val_test='val')
 
     print('done')
