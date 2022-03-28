@@ -120,6 +120,7 @@ class FCNN:
     
 
     def init_weights(self, W:np.array=None):
+        SIZE_RANDOM_INTERVALL = 0.1  # guessed based on 40 neurons, can be inproved
 
         if W:
             self.W = W
@@ -129,7 +130,16 @@ class FCNN:
             self.W = []
             for next_layer_size, bias in zip(self.layer_list, self.bias_list):
                 # have the weights distributed from -0.5 to 0.5
-                W = np.random.rand(next_layer_size, curr_layer_size + bias) - 0.5
+                bias_int = 0
+                if bias != 0:
+                    bias_int = 1
+                if self.activation_func_string_list[0] == 'relu' or self.activation_func_string_list[0] == 'leaky_relu':
+                    # if using relu actionvation function use "he"-initialisation of weights and the bias weights sould be zero
+                    W = np.random.normal(loc=0, scale=2/curr_layer_size, size=(next_layer_size, curr_layer_size))
+                    if bias_int:
+                        W = np.c_[np.zeros((next_layer_size, 1)), W]
+                else:
+                    W = np.random.rand(next_layer_size, curr_layer_size + bias_int)* SIZE_RANDOM_INTERVALL - 0.5
                 self.W.append(W)
                 curr_layer_size = next_layer_size
 
@@ -141,6 +151,39 @@ class FCNN:
         self.O = None
         self.Z = None       
         self.loss = None
+
+    
+
+    def clear_attributes(self):
+        # for grid search running
+
+        self.W = list()     # weights marixes
+        self.dW = list()    # derivative of the whole problem with respect to W structured like W
+        # outputs of each layer (not sure if this will be used)
+        self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
+        self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
+        self.loss = None    # loss for specific data
+    
+    
+        self.weight_decay = None
+        self.lambd = None
+
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
+        self.loss_hist = [] 
+        self.acc_hist = [] 
+        self.val_acc_hist = []    
+        self.f1_score_hist = []
+        self.f1_score_val_hist = []
+
+        self.num_samples = None
+        self.idle_weight = None
+        self.non_idle_weight = None
 
 
     def check_and_correct_shapes(self, X:np.array, Y_g:np.array):
@@ -181,7 +224,7 @@ class FCNN:
         for layer in range(len(self.W)):
             if layer == 0:
                 o = X.T     # (n_0 x d)
-                if self.bias_list[0] == 1:
+                if self.bias_list[0] != 0:
                     o = np.r_[np.ones(o.shape[1]).reshape(1, -1), o]    
                 o_list.append(o)
             
@@ -189,7 +232,7 @@ class FCNN:
             o = self.activation_funcs[layer](z)
 
             if not layer+1 == len(self.W):
-                if self.bias_list[layer+1] == 1:
+                if self.bias_list[layer+1] != 0:
                     o = np.r_[np.ones(o.shape[1]).reshape(1, -1), o]
             
             o_list.append(o)
@@ -251,7 +294,7 @@ class FCNN:
                     dW = dW * self.d_activation_funcs[i](self.Z[i].T)
                 
             else:
-                if self.bias_list[i+1]:
+                if self.bias_list[i+1] != 0:
                     # removing the first column of the weight matrix is due to bias
                     dW = dW @ self.W[i+1][:, 1:] * self.d_activation_funcs[i](self.Z[i].T)
                 else:

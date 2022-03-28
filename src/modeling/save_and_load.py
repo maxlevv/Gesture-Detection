@@ -1,5 +1,8 @@
 from __future__ import annotations
-import numpy as np 
+
+import os
+
+import numpy as np
 from pathlib import Path
 # from neural_network import FCNN
 from modeling.feature_scaling import StandardScaler
@@ -52,9 +55,15 @@ def save_meta_json_and_weights(neural_net:FCNN, meta_data:MetaData, save_runs_fo
 def load_meta_json_and_weights(from_folder_path:Path) -> Tuple[List[np.array], dict]:
     # loads the weights and meta data from the folder specified and returns them
     W = []
-    for w_file_path in from_folder_path.glob(f"w_*.npy"):
-        W.append(np.load(w_file_path))
-        # here the order of the files could go wrong but practically it should work
+    i = -1
+    while True:
+        i = i + 1
+        w_file_path = os.path.join(from_folder_path, f"w_{i}.npy")
+        if os.path.exists(w_file_path):
+            W.append(np.load(w_file_path))
+            # here the order of the files could go wrong but practically it should work
+        else:
+            break
 
     with open(list(from_folder_path.glob('*_meta.json'))[0], 'r') as meta_json_file:
         meta_data_dict = json.load(meta_json_file)

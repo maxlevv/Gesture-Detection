@@ -15,7 +15,6 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
 
     for video_file_path in video_folder_path.glob('*.mp4'):
         cap = cv2.VideoCapture(str(video_file_path))
-
         # cap = cv2.VideoCapture(index=0)
 
         result_csv_filename = raw_frames_folder_path / f"{video_file_path.name.replace('.mp4', '_')}{current_time}_raw.csv"
@@ -24,7 +23,7 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
         frame_count = 0
         success = True
         with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-            while cap.isOpened() and success and frame_count < 500:
+            while cap.isOpened() and success:
                 if frame_count % 100 == 0: print(f'On frame {frame_count}')
                 frame_count += 1
 
@@ -65,11 +64,11 @@ def testing():
 def converting():
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\rotate_right')
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_right')
-    video_folder_path = Path(r'C:\Users\Sepp\Videos\ml_projekt_test')
-    video_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\src\data_exploration')
+    #video_folder_path = Path(r'C:\Users\Sepp\Videos\ml_projekt_test')
+    video_folder_path = Path(r'C:\Users\Max\Documents\Master Würzburg\Machine Learning\final-project-getting-started\demo_data\Videos Part 2 mp4\point')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
-    raw_frames_folder_path = Path(r'..\..\data\raw_frames\test')
+    raw_frames_folder_path = Path(r'C:\Users\Max\Desktop')
     video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
 
 
