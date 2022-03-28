@@ -34,8 +34,8 @@ class PredictionHandler():
         self.prediction = softmax2one_hot(self.network.O[-1].T)
 
     def make_prediction_for_live(self, resampled_df: pd.DataFrame) -> np.array: 
-        print(resampled_df)
-        print("net_size", self.preproc_params.num_timesteps)
+        # print(resampled_df)
+        # print("net_size", self.preproc_params.num_timesteps)
         frames_preproc, _ = create_X(resampled_df, self.preproc_params)
         frames_preproc = self.network.scaler.transform(frames_preproc)
         self.network.forward_prop(frames_preproc)
@@ -91,10 +91,11 @@ def create_PredictionHandler():
     mediapipe_columns_for_sum = mediapipe_colums_for_diff
 
     preproc_params = Preprocessing_parameters(
-        num_shifts=1, num_timesteps=7,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
-        summands_pattern=[1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
+        num_shifts=1, num_timesteps=10,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
+        summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     network_path = Path(r'../../saved_runs\first_run_max\2022-03-12_0_72-40-40-30-20-10-4')
+    network_path = Path(r'../../saved_runs\try_live_models\leaky_relu,ep=80,bs=512,lr=0.004814,wd=0.004551\2022-03-28_0_112-40-40-30-20-10-11')
     network = FCNN.load_run(network_path)
 
     pred_handler = PredictionHandler(network, preproc_params)
