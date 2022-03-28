@@ -18,6 +18,12 @@ from process_videos.helpers.colors import bcolors
 def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, select_mandatory_label: bool = True):
     df = None
     for preproc_csv_file_path in preproc_folder_path.glob('**/*_preproc.csv'):
+
+        # if 'nina' in str(preproc_csv_file_path):
+        #     print(f'{bcolors.FAIL}{preproc_csv_file_path} continue !{bcolors.ENDC}')
+        #     continue
+        print('using', preproc_csv_file_path)
+
         next_df = pd.read_csv(preproc_csv_file_path, sep=' *,', engine='python')
         if df is None:
             df = next_df
