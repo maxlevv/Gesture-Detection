@@ -134,7 +134,9 @@ def preprocessing_difference(frames, number_timestamps: int, number_shifts: int)
 
 def scale_to_body_size_and_dist_to_camera(vector_to_scale: np.array, window_df: pd.DataFrame):
     # vector_to_scale should be scaled by some uniform measure like the distance between hips and torso
-    
+    # print('window_df shape:', window_df.shape)
+    # print('window_df', window_df)
+    # print('window_df columns', window_df.columns)
     hip_mid_point = np.array([
         (window_df.iloc[0, window_df.columns.get_loc('left_hip_x')] + window_df.iloc[0, window_df.columns.get_loc('right_hip_x')]) / 2,
         (window_df.iloc[0, window_df.columns.get_loc('left_hip_y')] + window_df.iloc[0, window_df.columns.get_loc('right_hip_y')]) / 2
@@ -415,6 +417,11 @@ def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_pa
         X[i, 2] = x_diff[1]
         X[i, 3] = y_diff[1]
 
+        # print('argument', df.iloc[selection_index: selection_index, :])
+        # print('df index', df.index)
+        # print('direct loc', df.iloc[selection_index, :])
+        
+
         X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[selection_index: selection_index, :])
 
     X_df = pd.DataFrame(data=X, columns=["shoulder_wrist_right_x", "shoulder_wrist_right_y",
@@ -485,6 +492,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
     # number of samples in X
     num_samples = math.floor(
         (df.shape[0] - preproc_params.num_timesteps + preproc_params.num_shifts) / preproc_params.num_shifts)
+    print('num_samples', num_samples)
 
     X_shoulder_wrist, X_shoulder_wrist_df = shoulder_wrist_difference(df, preproc_params)
 

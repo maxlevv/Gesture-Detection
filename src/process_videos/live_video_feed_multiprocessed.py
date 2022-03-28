@@ -34,6 +34,11 @@ def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multipr
             image.flags.writeable = False
             
             results = pose.process(image)
+            # print(results.pose_landmarks)
+            # print(type(results.pose_landmarks))
+            if results.pose_landmarks is None:
+                print('no person detected')
+                continue
 
             # get the frame data here already as the items in the queue need to be pickled and the pose object can not be pickled
             frame = []
@@ -50,9 +55,12 @@ def call_mediapipe(frames_queue: multiprocessing.Queue, mediapipe_queue: multipr
 def call_resample(mediapipe_queue: multiprocessing.Queue, resample_queue: multiprocessing.Queue, 
                   live_df_generator: LiveDfGenerator):
     # this is the resample process
-
+    counter = 0
     while True:
         frame, timestamp = mediapipe_queue.get(block=True)
+        # counter += 1
+        # if counter < 2:
+        #     continue
         df = live_df_generator.generate_window_df(new_data=None, timestamp=timestamp, frame=frame)
         resample_queue.put(df)
 
@@ -67,6 +75,7 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
         if resampled_df is None:
             continue
         prediction = prep_handler.make_prediction_for_live(resampled_df)
+        # print('prediction', prediction)
         # event = prep_handler.compute_events(prediction)
 
         prediction_queue.put(prediction)
@@ -155,7 +164,7 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
 def test():
     run_live_mode(
         relevant_signals_dict_yaml_path=Path(r'../../src\preprocessing\relevant_keypoint_mapping.yml'),
-        window_size=7,
+        window_size=10,
         flip_bool=False
     )
 

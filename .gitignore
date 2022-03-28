@@ -8,4 +8,8 @@ src/evaluation/__pycache__
 saved_runs/jonas_2_grid_gross
 saved_runs/jonas_3_grid_gross
 src/evaluation/__pycache__
+data/labeled_frames/combined
+data/labeled_frames/second_session
+data/labeled_frames/third_session
+data/labeled_frames/labeled_combined.zip
 # saved_runs/jonas_3_grid_gross
