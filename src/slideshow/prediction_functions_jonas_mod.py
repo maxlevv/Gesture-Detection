@@ -45,6 +45,11 @@ class PredictionHandler():
         frames_preproc = self.network.scaler.transform(frames_preproc)
         self.network.forward_prop(frames_preproc)
         self.prediction = softmax2one_hot(self.network.O[-1].T)
+        # print('self.prediction', self.prediction)
+        # print(self.prediction[0][0])
+        # if not self.prediction[0][0] == 1:
+        #     print('confidence' , self.network.O[-1].T[self.prediction.astype(bool)])
+        # print('confidence' , self.network.O[-1].T[self.prediction])
         return self.prediction
 
     def compute_events(self, prediction: np.array) -> str:
@@ -62,6 +67,7 @@ class PredictionHandler():
                 if counter >= self.emitting_number:
                     # self.events.append(self.dictionary[predicted_value])
                     self.events.append(self.labels(predicted_value).name)
+                    # print('confidence' , self.network.O[-1].T[self.prediction.astype(bool)])
                     # print(self.labels(predicted_value).name)
                     # set counter to number of idles before a gesture can be detected:
                     self.no_consider = self.set_no_consider

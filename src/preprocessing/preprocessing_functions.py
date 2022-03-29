@@ -439,8 +439,44 @@ def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_
     y = np.zeros((num_samples, ground_truth_df.shape[1]))
 
     data = ground_truth_df.to_numpy()
+
+    idle_hone_hot = np.zeros_like(data[0*num_shifts + num_timesteps-6, :])
+    idle_hone_hot[Labels.idle.value] = 1
+    rotate_one_hot = np.zeros_like(data[0*num_shifts + num_timesteps-6, :])
+    rotate_one_hot[Labels.rotate.value] = 1
+    rotate_left_one_hot = None
+    if 'rotate_left' in Labels.get_label_list():
+        rotate_left_one_hot = np.zeros_like(data[0*num_shifts + num_timesteps-6, :])
+        rotate_left_one_hot[Labels.rotate_left.value] = 1
+
     for i in range(num_samples):
-        y[i, :] = data[i*num_shifts + num_timesteps-1, :]
+
+        middle_one_hot = data[i*num_shifts + num_timesteps-(int(np.ceil(num_timesteps/2)) + 1), :]
+        second_to_last_one_hot = data[i*num_shifts + num_timesteps-2, :] # vom vorletzten im window ablesen
+        last_one_hot = data[i*num_shifts + num_timesteps-1, :] # vom letzten im window ablesen
+
+        if (last_one_hot == rotate_one_hot).all() and (middle_one_hot == rotate_one_hot).all():
+            # both -> rotate
+            y[i, :] = rotate_one_hot
+        else:
+            if (second_to_last_one_hot == rotate_one_hot).all():
+                # not both, but second to last -> idle
+                y[i, :] = idle_hone_hot
+            else:
+                # not both and not even second to last -> check for rotate left
+                if rotate_left_one_hot is None:
+                    y[i, :] = second_to_last_one_hot
+                else:
+                    if (last_one_hot == rotate_left_one_hot).all() and (middle_one_hot == rotate_left_one_hot).all():
+                        # both -> rotate
+                        y[i, :] = rotate_left_one_hot
+                    else:
+                        if (second_to_last_one_hot == rotate_left_one_hot).all():
+                            # not both, but second to last -> idle
+                            y[i, :] = idle_hone_hot
+                        else:
+                            # not rotate related -> default 
+                            y[i, :] = second_to_last_one_hot
 
     return y
 
@@ -602,8 +638,8 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
         if only_optional_bool:
             if 'mandatory' in str(labeled_csv_file_path):
                 continue
-        if not 'nina' in str(labeled_csv_file_path):
-            continue
+        # if not 'nina' in str(labeled_csv_file_path):
+        #     continue
         _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
         nn_input_df.to_csv(preprocessed_frames_folder_path /
@@ -720,28 +756,28 @@ if __name__ == '__main__':
 
 
     # 8 cumsum every_second
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
-                         Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\mandatory_data'), 
-                         preproc_params, 
-                         only_optional_bool=False, 
-                         train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='train') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/rotate_right/train/03-19_nina_rotate_train_labeled.csv'), KeyError(nan))]
     
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
-                         Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\mandatory_data'), 
-                         preproc_params, 
-                         only_optional_bool=False, 
-                         train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\mandatory_gestures'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\mandatory_data'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=False, 
+    #                      train_val_test='val') # [(WindowsPath('../../data/labeled_frames/ready_to_train/mandatory_gestures/swipe_right/validation/03-19_nina_swipe_right_val_labeled.csv'), KeyError(nan))]
     
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
-                         Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\optional'), 
-                         preproc_params, 
-                         only_optional_bool=True, 
-                         train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='val') #[(WindowsPath('../../data/labeled_frames/ready_to_train/pinch/validation/03-19_nina_pinch_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/point/val/03-19_nina_point_val_labeled.csv'), KeyError(nan)), (WindowsPath('../../data/labeled_frames/ready_to_train/swipe_up/validation/03-19_nina_swipe_up_val_labeled.csv'), KeyError(nan))]
     
-    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
-                         Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\optional'), 
-                         preproc_params, 
-                         only_optional_bool=True, 
-                         train_val_test='train') 
+    # handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train'), 
+    #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\optional'), 
+    #                      preproc_params, 
+    #                      only_optional_bool=True, 
+    #                      train_val_test='train') 
 
     print('done')
