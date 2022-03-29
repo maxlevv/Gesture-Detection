@@ -13,14 +13,14 @@ if TYPE_CHECKING:
 def generate_acc_plot(neural_net: FCNN, ax: plt.axes):
     ax.plot(neural_net.acc_hist, label='train_accuracy')
     ax.plot(neural_net.val_acc_hist, label='val_accuracy')
-    ax.set_xlabel('iterations')
+    ax.set_xlabel('epochs')
     ax.set_ylabel('acc')
     ax.set_title('accuracy')
     ax.legend(loc='lower right')
 
 def generate_loss_plot(neural_net: FCNN, ax: plt.axes):
     ax.plot(neural_net.loss_hist, label='loss')
-    ax.set_xlabel('iterations')
+    ax.set_xlabel('epochs')
     ax.set_ylabel('loss')
     ax.set_title('loss')
     ax.legend(loc='upper right')
@@ -40,7 +40,24 @@ def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Man
             ax.plot(f1_np[:, label.value], label=str(label.name))
         ax.set_title('val_f1_score')
     
-    ax.set_xlabel('iteration')
+    ax.set_xlabel('epochs')
+    ax.set_ylabel('f1_score')
+    ax.legend(loc='lower right')
+
+
+
+def generate_mean_f1_score_plot(neural_net: FCNN, ax: plt.axes):
+    # num_classes = neural_net.layer_list[-1]  wäre auch möglich
+
+    f1_train_np = np.array(neural_net.f1_score_hist)
+    ax.plot(np.mean(f1_train_np, axis=1), label='mean f1 train')
+    
+    f1_val_np = np.array(neural_net.f1_score_val_hist)
+    ax.plot(np.mean(f1_val_np, axis=1), label='mean f1 val')
+    
+    ax.set_title('mean f1_score')
+    
+    ax.set_xlabel('epochs')
     ax.set_ylabel('f1_score')
     ax.legend(loc='lower right')
     
@@ -76,6 +93,8 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
     generate_f1_score_plot(neural_net, ax=axs[1, 2], mode='val', Labels_Mandatory_Optional=Labels)
 
     generate_acc_plot(neural_net, ax=axs[0, 1])
+
+    generate_mean_f1_score_plot(neural_net, ax=axs[0, 3])
 
     if not save_plot_path == None:
         fig.savefig(save_plot_path)
