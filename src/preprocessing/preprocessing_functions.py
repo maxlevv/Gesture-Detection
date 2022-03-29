@@ -1,3 +1,4 @@
+import time
 import math
 import numpy as np
 import pandas as pd
@@ -7,6 +8,7 @@ from typing import List, Tuple
 from enum import Enum
 import glob
 from tqdm import tqdm
+from process_videos.helpers.colors import bcolors
 
 # preprocessing parameters
 
@@ -134,7 +136,9 @@ def preprocessing_difference(frames, number_timestamps: int, number_shifts: int)
 
 def scale_to_body_size_and_dist_to_camera(vector_to_scale: np.array, window_df: pd.DataFrame):
     # vector_to_scale should be scaled by some uniform measure like the distance between hips and torso
-    
+    # print('window_df shape:', window_df.shape)
+    # print('window_df', window_df)
+    # print('window_df columns', window_df.columns)
     hip_mid_point = np.array([
         (window_df.iloc[0, window_df.columns.get_loc('left_hip_x')] + window_df.iloc[0, window_df.columns.get_loc('right_hip_x')]) / 2,
         (window_df.iloc[0, window_df.columns.get_loc('left_hip_y')] + window_df.iloc[0, window_df.columns.get_loc('right_hip_y')]) / 2
@@ -267,8 +271,8 @@ def calc_angle_diff(angle_np: np.array, window_start_index: int, num_timesteps: 
     return scale_angle_diff(angle_diff, window_start_index, num_timesteps, df, side)
 
 
-def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
-
+def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters, X) -> Tuple[np.array, pd.DataFrame]:
+    # len(preproc_params.mediapipe_columns_for_sum)
     num_timesteps = preproc_params.num_timesteps
     num_shifts = preproc_params.num_shifts
     summands_pattern = preproc_params.summands_pattern
@@ -302,7 +306,7 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
 
     num_features = (data.shape[1] + num_angle_features) * sum(summands_pattern)
 
-    X = np.zeros((num_samples, num_features))
+    # X = np.zeros((num_samples, num_features))
 
     # print("num_samples, num_features", num_samples, num_features)
 
@@ -327,18 +331,18 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -
         cumsum_features = cumsum[np.array(summands_pattern, dtype=bool), :]
 
         # adding the features to X
-        X[i, :] = cumsum_features.flatten('F').reshape(1, -1)
+        X[i, :-4] = cumsum_features.flatten('F').reshape(1, -1)
 
         # apply scaling to diff here, as the angle is now multiplied by projected wrist to elbow dist, which needs to be scaled
-        X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
+        X[i, :-4] = scale_to_body_size_and_dist_to_camera(X[i, :-4], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
 
-    # creating the df
-    column_cumsum_names = [orig_column +
-                            "_cumsum" for orig_column in orig_columns]
-    X_df = pd.DataFrame(data=X, columns=[
-                        column_cumsum_name + f"_{str(i)}" for column_cumsum_name in column_cumsum_names for i in range(sum(summands_pattern))])
+    # # creating the df
+    # column_cumsum_names = [orig_column +
+    #                         "_cumsum" for orig_column in orig_columns]
+    # X_df = pd.DataFrame(data=X, columns=[
+    #                     column_cumsum_name + f"_{str(i)}" for column_cumsum_name in column_cumsum_names for i in range(sum(summands_pattern))])
 
-    return X, X_df
+    # return X, X_df
 
 
 def calc_forearm_angle(df: pd.DataFrame):
@@ -386,15 +390,14 @@ def calc_forearm_angle(df: pd.DataFrame):
     return df
 
 
-def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_parameters):
-    df = df.copy()
+def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_parameters, X):
 
     num_timesteps = preproc_params.num_timesteps
     num_shifts = preproc_params.num_shifts
     num_samples = math.floor(
         (df.shape[0] - num_timesteps + num_shifts) / num_shifts)
 
-    X = np.zeros((num_samples, 4))
+    # X = np.zeros((num_samples, 4))
 
     shoulder_x = df[["right_shoulder_x", "left_shoulder_x"]].to_numpy()
     shoulder_y = df[["right_shoulder_y", "left_shoulder_y"]].to_numpy()
@@ -410,17 +413,22 @@ def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_pa
         x_diff = np.subtract(shoulder_x[selection_index], wrist_x[selection_index])
         y_diff = np.subtract(shoulder_y[selection_index], wrist_y[selection_index])
 
-        X[i, 0] = x_diff[0]
-        X[i, 1] = y_diff[0]
-        X[i, 2] = x_diff[1]
-        X[i, 3] = y_diff[1]
+        X[i, -4] = x_diff[0]
+        X[i, -3] = y_diff[0]
+        X[i, -2] = x_diff[1]
+        X[i, -1] = y_diff[1]
 
-        X[i, :] = scale_to_body_size_and_dist_to_camera(X[i, :], df.loc[selection_index: selection_index, :])
+        # print('argument', df.iloc[selection_index: selection_index, :])
+        # print('df index', df.index)
+        # print('direct loc', df.iloc[selection_index, :])
+        
 
-    X_df = pd.DataFrame(data=X, columns=["shoulder_wrist_right_x", "shoulder_wrist_right_y",
-                                         "shoulder_wrist_left_x", "shoulder_wrist_left_y"])
+        X[i, -4:] = scale_to_body_size_and_dist_to_camera(X[i, -4:], df.loc[selection_index: selection_index, :])
 
-    return X, X_df
+    # X_df = pd.DataFrame(data=X, columns=["shoulder_wrist_right_x", "shoulder_wrist_right_y",
+    #                                      "shoulder_wrist_left_x", "shoulder_wrist_left_y"])
+
+    # return X, X_df
 
 
 def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_timesteps: int,
@@ -478,7 +486,7 @@ def replace_str_label_by_one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
+def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters, verbose=False) -> Tuple[np.array, pd.DataFrame]:
     # num_shifts: int, num_timesteps: int, difference_mode: str, summands_pattern: List[int]) -> Tuple[np.array, pd.DataFrame]:
     # evtl add fuctions for other features here
 
@@ -486,32 +494,60 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters) -> Tupl
     num_samples = math.floor(
         (df.shape[0] - preproc_params.num_timesteps + preproc_params.num_shifts) / preproc_params.num_shifts)
 
-    X_shoulder_wrist, X_shoulder_wrist_df = shoulder_wrist_difference(df, preproc_params)
 
     # note that forearm_angle is different to differences and cumsum, as is on coordinate level and needs to go through diff or cumsum
     if preproc_params.forearm_angle:
+        # t3 = time.perf_counter()
         df = calc_forearm_angle(df)
+        # print('calc_forearm_angle time', time.perf_counter() - t3)
 
         # add the angle names to the lists so that diff and cumsum is also applied to it
         preproc_params.add_new_columns_to_column_lists(
             ['right_forearm_angle', 'left_forearm_angle', 'right_forearm_r', 'left_forearm_r'])
+    
+    orig_columns = preproc_params.mediapipe_columns_for_sum
+
+    # trying to initialize X at the start to avoid having to to concatenation, which is quite slow for live mode performance
+    # df.shape[1] columns to cumsum features and 4 features for wrist shoulder vector
+    num_features = len(preproc_params.mediapipe_columns_for_sum) * sum(preproc_params.summands_pattern) + 4
+
+    X = np.zeros((num_samples, num_features))
+
+    
 
     if preproc_params.difference_mode:
-        X_diff, X_diff_df = calc_differences(df, preproc_params)
-    else:
-        X_diff, X_diff_df = np.array([]).reshape(num_samples, 0), None
+        print(f'{bcolors.FAIL}WARNING: difference mode is deactivated, needs refactoring{bcolors.ENDC}')
+    #     X_diff, X_diff_df = calc_differences(df, preproc_params)
+    # else:
+    #     X_diff, X_diff_df = np.array([]).reshape(num_samples, 0), None
 
     if preproc_params.summands_pattern:
-        X_sum, X_sum_df = cumulative_sum(df, preproc_params)
+        # t4 = time.perf_counter()
+        # write the cumsum in the first columns of X
+        cumulative_sum(df, preproc_params, X)
+        # print('cumsum calc time', time.perf_counter() - t4)
     else:
-        X_sum, X_sum_df = np.array([], shape=(num_samples, 0)), None 
-    
-    
+        raise RuntimeError('summands_pattern needed, implementation for diff needed')
 
-    X_mode = np.c_[X_diff, X_sum].round(6)
-    X_mode_df = pd.concat([X_diff_df, X_sum_df], axis=1).round(6)
+    # add shoulder wrist diff in the last 4 columns of X
+    shoulder_wrist_difference(df, preproc_params, X)
 
-    return np.c_[X_mode, X_shoulder_wrist].round(6), pd.concat([X_mode_df, X_shoulder_wrist_df], axis=1).round(6)
+    # t6 = time.perf_counter()
+
+    X = X.round(6)
+
+    # creating the df
+    column_cumsum_names = [orig_column +
+                            "_cumsum" for orig_column in orig_columns]
+    cumsum_column_names = [column_cumsum_name + f"_{str(i)}" for column_cumsum_name in column_cumsum_names for i in range(sum(preproc_params.summands_pattern))]
+    shoulder_wrist_column_names = ["shoulder_wrist_right_x", "shoulder_wrist_right_y",
+                                         "shoulder_wrist_left_x", "shoulder_wrist_left_y"]
+    X_df = pd.DataFrame(data=X, columns=cumsum_column_names + shoulder_wrist_column_names)
+
+
+    # print('create x inner time', time.perf_counter() - t6)
+
+    return X, X_df
 
 
 def create_y(df: pd.DataFrame, preproc_params : Preprocessing_parameters) -> Tuple[np.array, pd.DataFrame]:
@@ -562,19 +598,20 @@ def handle_preprocessing(labeled_frames_folder_path: Path, preprocessed_frames_f
     search_ending = '**/*_' + train_val_test + '_labeled.csv'
     for labeled_csv_file_path in tqdm(labeled_frames_folder_path.glob(search_ending)):
         print('Now on file: ', labeled_csv_file_path)
-        try:
-            if only_optional_bool:
-                if 'mandatory' in str(labeled_csv_file_path):
-                    continue
-            # if 'nina' in str(labeled_csv_file_path):
-            #     continue
-            _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
+        # try:
+        if only_optional_bool:
+            if 'mandatory' in str(labeled_csv_file_path):
+                continue
+        if not 'nina' in str(labeled_csv_file_path):
+            continue
+        _, nn_input_df = preprocessing(labeled_csv_file_path, preproc_params)
 
-            nn_input_df.to_csv(preprocessed_frames_folder_path /
-                              labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
-        except Exception as e:
-            print("error in file", labeled_csv_file_path, e)
-            err_files.append((labeled_csv_file_path, e))
+        nn_input_df.to_csv(preprocessed_frames_folder_path /
+                            labeled_csv_file_path.name.replace("_labeled.csv", "_preproc.csv"))
+
+        # except Exception as e:
+        #     print("error in file", labeled_csv_file_path, e)
+        #     err_files.append((labeled_csv_file_path, e))
     
     print('error in files: \n', err_files)
 

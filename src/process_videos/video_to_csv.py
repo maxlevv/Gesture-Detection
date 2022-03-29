@@ -9,7 +9,7 @@ def video_to_csv(video_folder_path: Path, raw_frames_folder_path: Path, flip_ima
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_pose = mp.solutions.pose
 
-    show_video = True
+    show_video = False
 
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
 

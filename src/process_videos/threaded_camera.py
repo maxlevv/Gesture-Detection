@@ -49,18 +49,31 @@ class ThreadedCamera(object):
 
     def add_frame_to_queue(self):
         first_bool = True
+        counter = 1
         while True:
             if self.capture.isOpened():
                 current_timestamp = self.capture.get(cv2.CAP_PROP_POS_MSEC)
                 # print(bcolors.OKGREEN + "reading on timestep:" + str(current_timestamp) + bcolors.ENDC)
                 if not current_timestamp == self.last_timestamp:
+
                     self.status, frame = self.capture.read()
+                    
+                    # only read every third frame
+                    counter += 1
+                    if counter < 3:
+                        continue
+                    else:
+                        counter = 1
+                        
+
                     if first_bool:
                         first_bool = False
                         continue
                     self.frame_queue.put(frame)
                     self.timestamp_queue.put(current_timestamp)
                     self.last_timestamp = current_timestamp
+                else:
+                    print('double frame not read')
                     # print("timestamp_queue: ", self.timestamp_queue.get(), "###")
             else:
                 print(bcolors.FAIL + "capture closed" + bcolors.ENDC)
