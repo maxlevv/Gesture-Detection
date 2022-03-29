@@ -331,10 +331,10 @@ def cumulative_sum(df: pd.DataFrame, preproc_params: Preprocessing_parameters, X
         cumsum_features = cumsum[np.array(summands_pattern, dtype=bool), :]
 
         # adding the features to X
-        X[i, :-4] = cumsum_features.flatten('F').reshape(1, -1)
+        X[i, :-2] = cumsum_features.flatten('F').reshape(1, -1)
 
         # apply scaling to diff here, as the angle is now multiplied by projected wrist to elbow dist, which needs to be scaled
-        X[i, :-4] = scale_to_body_size_and_dist_to_camera(X[i, :-4], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
+        X[i, :-2] = scale_to_body_size_and_dist_to_camera(X[i, :-2], df.loc[i * num_shifts: i * num_shifts + num_timesteps - 1, :])
 
     # # creating the df
     # column_cumsum_names = [orig_column +
@@ -397,10 +397,10 @@ def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_pa
     num_samples = math.floor(
         (df.shape[0] - num_timesteps + num_shifts) / num_shifts)
 
-    # X = np.zeros((num_samples, 4))
-
     shoulder_x = df[["right_shoulder_x", "left_shoulder_x"]].to_numpy()
     shoulder_y = df[["right_shoulder_y", "left_shoulder_y"]].to_numpy()
+    elbow_x = df[["right_elbow_x", "left_elbow_x"]].to_numpy()
+    elbow_y = df[["right_elbow_y", "left_elbow_y"]].to_numpy()
     wrist_x = df[["right_wrist_x", "left_wrist_x"]].to_numpy()
     wrist_y = df[["right_wrist_y", "left_wrist_y"]].to_numpy()
 
@@ -410,25 +410,23 @@ def shoulder_wrist_difference(df: pd.DataFrame, preproc_params: Preprocessing_pa
     for i in range(num_samples):
         selection_index = i * num_shifts + select_position
 
-        x_diff = np.subtract(shoulder_x[selection_index], wrist_x[selection_index])
-        y_diff = np.subtract(shoulder_y[selection_index], wrist_y[selection_index])
+        x_shoulder_elbow_diff = np.subtract(shoulder_x[selection_index], elbow_x[selection_index])
+        x_elbow_wrist_diff = np.subtract(elbow_x[selection_index], wrist_x[selection_index])
 
-        X[i, -4] = x_diff[0]
-        X[i, -3] = y_diff[0]
-        X[i, -2] = x_diff[1]
-        X[i, -1] = y_diff[1]
+        y_shoulder_elbow_diff = np.subtract(shoulder_y[selection_index], elbow_y[selection_index])
+        y_elbow_wrist_diff = np.subtract(elbow_y[selection_index], wrist_y[selection_index])
 
-        # print('argument', df.iloc[selection_index: selection_index, :])
-        # print('df index', df.index)
-        # print('direct loc', df.iloc[selection_index, :])
-        
+        right_dist = np.sqrt(np.power(x_shoulder_elbow_diff[0], 2) + np.power(x_elbow_wrist_diff[0], 2) +
+                             np.power(y_shoulder_elbow_diff[0], 2) + np.power(y_elbow_wrist_diff[0], 2))
 
-        X[i, -4:] = scale_to_body_size_and_dist_to_camera(X[i, -4:], df.loc[selection_index: selection_index, :])
+        left_dist = np.sqrt(np.power(x_shoulder_elbow_diff[1], 2) + np.power(x_elbow_wrist_diff[1], 2) +
+                            np.power(y_shoulder_elbow_diff[1], 2) + np.power(y_elbow_wrist_diff[1], 2))
 
-    # X_df = pd.DataFrame(data=X, columns=["shoulder_wrist_right_x", "shoulder_wrist_right_y",
-    #                                      "shoulder_wrist_left_x", "shoulder_wrist_left_y"])
+        X[i, -2] = right_dist
+        X[i, -1] = left_dist
 
-    # return X, X_df
+        X[i, -2:] = scale_to_body_size_and_dist_to_camera(X[i, -2:], df.loc[selection_index: selection_index, :])
+
 
 
 def determine_label_from_ground_truth_vector(ground_truth_df: pd.DataFrame, num_timesteps: int,
@@ -544,8 +542,8 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters, verbose
     orig_columns = preproc_params.mediapipe_columns_for_sum
 
     # trying to initialize X at the start to avoid having to to concatenation, which is quite slow for live mode performance
-    # df.shape[1] columns to cumsum features and 4 features for wrist shoulder vector
-    num_features = len(preproc_params.mediapipe_columns_for_sum) * sum(preproc_params.summands_pattern) + 4
+    # df.shape[1] columns to cumsum features and 2 features for wrist shoulder vector
+    num_features = len(preproc_params.mediapipe_columns_for_sum) * sum(preproc_params.summands_pattern) + 2
 
     X = np.zeros((num_samples, num_features))
 
@@ -565,7 +563,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters, verbose
     else:
         raise RuntimeError('summands_pattern needed, implementation for diff needed')
 
-    # add shoulder wrist diff in the last 4 columns of X
+    # add shoulder wrist dist in the last 2 columns of X
     shoulder_wrist_difference(df, preproc_params, X)
 
     # t6 = time.perf_counter()
@@ -576,8 +574,7 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters, verbose
     column_cumsum_names = [orig_column +
                             "_cumsum" for orig_column in orig_columns]
     cumsum_column_names = [column_cumsum_name + f"_{str(i)}" for column_cumsum_name in column_cumsum_names for i in range(sum(preproc_params.summands_pattern))]
-    shoulder_wrist_column_names = ["shoulder_wrist_right_x", "shoulder_wrist_right_y",
-                                         "shoulder_wrist_left_x", "shoulder_wrist_left_y"]
+    shoulder_wrist_column_names = ["right_shoulder_elbow_wrist_dist", "left_shoulder_elbow_wrist_dist"]
     X_df = pd.DataFrame(data=X, columns=cumsum_column_names + shoulder_wrist_column_names)
 
 
@@ -778,6 +775,12 @@ if __name__ == '__main__':
     #                      Path( r'../../data\preprocessed_frames\window=8,cumsum=every_second\train\optional'), 
     #                      preproc_params, 
     #                      only_optional_bool=True, 
-    #                      train_val_test='train') 
+    #                      train_val_test='train')
+
+    handle_preprocessing(Path(r'../../data\labeled_frames\ready_to_train\point'),
+                         Path(r'../../data\preprocessed_frames\test_run_max'),
+                         preproc_params,
+                         only_optional_bool=True,
+                         train_val_test='train')
 
     print('done')
