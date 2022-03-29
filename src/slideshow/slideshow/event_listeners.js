@@ -10,11 +10,37 @@ socket.onmessage = function(event) {
       console.log("received 'left' event");
       Reveal.left();
       break;
+    case "up":
+      console.log("received 'up' event");
+      Reveal.right();
+      break;
+    case "down":
+      console.log("received 'down' event");
+      Reveal.left();
+      break;
     case "rotate":
       console.log("received 'rotate' event");
       const currentSlide = Reveal.getCurrentSlide();
 
-      rotateRotatables(currentSlide);  // defined in helper_methods.js
+      rotateRotatables(currentSlide, 90);  // defined in helper_methods.js
+      break;
+    case "rotate_left":
+      console.log("received 'rotate_left' event");
+      const currentSlide = Reveal.getCurrentSlide();
+
+      rotateRotatables(currentSlide, -90);  // defined in helper_methods.js
+      break;
+    case "rotate180":
+      console.log("received 'rotate180' event");
+      const currentSlide = Reveal.getCurrentSlide();
+
+      rotateRotatables(currentSlide, 180);  // defined in helper_methods.js
+      break;
+    case "rotate360":
+      console.log("received 'rotate360' event");
+      const currentSlide = Reveal.getCurrentSlide();
+
+      rotateRotatables(currentSlide, 360);  // defined in helper_methods.js
       break;
     case "zoom_in":
       console.log("received 'zoom_in' event");

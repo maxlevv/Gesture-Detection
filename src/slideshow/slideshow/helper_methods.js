@@ -5,7 +5,7 @@ const uid = function (i) {
 }(0);
 
 const rotateRotatables = function(rotationAngles) {
-  return function(slide) {
+  return function(slide, degree) {
     const rotatables = Array.from(slide.getElementsByClassName("rotatable"))
     if(rotatables.length > 0){
       rotatables.forEach(function(elem){
@@ -14,7 +14,7 @@ const rotateRotatables = function(rotationAngles) {
         if(!rotationAngles[elem.id]) {
           rotationAngles[elem.id] = 0
         }
-        new_rotation = rotationAngles[elem.id] + 90
+        new_rotation = rotationAngles[elem.id] + degree
         elem.style.transform = "rotate(" + (new_rotation) + "deg)"
         rotationAngles[elem.id] = new_rotation
       });
