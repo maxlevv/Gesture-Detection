@@ -19,11 +19,11 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     lr = (5 * np.power(10, random.uniform(-4, -3))).round(6)
     weight_decay = (random.choices([0, np.power(10, random.uniform(-3, -2)).round(6)], [0.25, 0.75]))[0]
     batch_size = random.choice([64, 128, 256, 512])
-    epochs = 10
+    epochs = 80
     activation_functions = ['sigmoid', 'relu', 'leaky_relu']
     activation_function = random.choice(activation_functions)
 
-    architecture = [40, 40, 30, 20, 10, y_train.shape[1]]
+    architecture = [40, 30, 20, 10, y_train.shape[1]]
 
     neural_net = FCNN(
         input_size=X_train.shape[1],
@@ -49,12 +49,12 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     neural_net.evaluate_model(X_train, y_train, X_val, y_val, save_folder_path / 'metrics_plot.png')
 
 
-
-    return [activation_function, epochs, batch_size, lr, weight_decay], min(neural_net.f1_score_hist[-1]), min(neural_net.f1_score_val_hist[-1])
+    return [activation_function, epochs, batch_size, lr, weight_decay], np.array(neural_net.f1_score_hist[-7:]).mean(), np.array(neural_net.f1_score_val_hist[-7:]).mean()
+    # return [activation_function, epochs, batch_size, lr, weight_decay], min(neural_net.f1_score_hist[-1]), min(neural_net.f1_score_val_hist[-1])
 
 
 def random_search_multipro(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description):
-    num_iterations = 30
+    num_iterations = 18
     num_simultaneous_processes = 6
 
     with multiprocessing.Pool(num_simultaneous_processes) as pool:
@@ -116,13 +116,13 @@ def random_search(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path)
         lr = (5 * np.power(10, random.uniform(-4, -3))).round(6)
         weight_decay = (random.choices([0, np.power(10, random.uniform(-3, -2)).round(6)], [0.25, 0.75]))[0]
         batch_size = random.choice([64, 128, 256, 512])
-        epochs = 30
+        epochs = 80
         activation_functions = ['sigmoid', 'relu', 'leaky_relu']
         activation_function = random.choice(activation_functions)
 
         neural_net = FCNN(
             input_size=X_train.shape[1],
-            layer_list=[40, 40, 30, 20, 10, y_train.shape[1]],
+            layer_list=[40, 30, 20, 10, y_train.shape[1]],
             bias_list=[1, 1, 1, 1, 1, 1],
             activation_funcs=[activation_function] * 5 + ['softmax'],
             loss_func='categorical_cross_entropy',
@@ -173,20 +173,20 @@ def random_search(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path)
 
 
 if __name__ == '__main__':
-    train_folder_path = Path(r'../../data\preprocessed_frames\window=10,cumsum=all\train')
-    val_folder_path = Path(r'../../data\preprocessed_frames\window=10,cumsum=all\validation')
+    train_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=all\train\mandatory_data')
+    val_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=all\validation\mandatory_data')
 
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=True)
+    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=True)
 
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch1_ep=80\cumsum_all'),
-        author='Jonas', description='ohne nina daten')
+    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\test_random_multi'),
+        author='Jonas', description='alle daten')
 
-    train_folder_path = Path(r'../../data\preprocessed_frames\window=10,cumsum=every_second\train')
-    val_folder_path = Path(r'../../data\preprocessed_frames\window=10,cumsum=every_second\validation')
+    # train_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\train')
+    # val_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation')
 
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=True)
+    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=True)
 
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second'),
-        author='Jonas', description='ohne nina daten')
+    # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_2\small,arch1_ep=80,win=8,cumsum=every_second'),
+    #     author='Jonas', description='alle daten')
