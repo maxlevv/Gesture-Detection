@@ -23,7 +23,7 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     activation_functions = ['sigmoid', 'relu', 'leaky_relu']
     activation_function = random.choice(activation_functions)
 
-    architecture = [40, 40, 30, 20, 10, y_train.shape[1]]
+    architecture = [40, 30, 20, y_train.shape[1]]
 
     neural_net = FCNN(
         input_size=X_train.shape[1],
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
 
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch1_ep=80\cumsum_all'),
+    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch2_ep=80\cumsum_all'),
         author='Jonas', description='ohne nina daten')
 
     train_folder_path = Path(r'../../data\preprocessed_frames\window=10,cumsum=every_second\train')
@@ -188,5 +188,5 @@ if __name__ == '__main__':
     X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
 
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second'),
+    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_random_1\arch2_ep=80\cumsum_every_second'),
         author='Jonas', description='ohne nina daten')

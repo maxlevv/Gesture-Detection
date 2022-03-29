@@ -67,7 +67,7 @@ class LiveDfGenerator:
         # print('df in resampling', df)
         # print('df type in resampling', type(df))
         # print('df columns in resampling', df.columns)
-        df.to_csv('resampled_df_to_reset_index.csv')
+        # df.to_csv('resampled_df_to_reset_index.csv')
         
         return df
 

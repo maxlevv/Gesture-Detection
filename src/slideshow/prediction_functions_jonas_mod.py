@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+import time
 from pathlib import Path
 from modeling.neural_network import FCNN
 from preprocessing.preprocessing_functions import Preprocessing_parameters
 from preprocessing.preprocessing_functions import create_X
+from preprocessing.preprocessing_functions import LabelsOptional
 from modeling.helper import softmax2one_hot
 
 
@@ -13,7 +15,8 @@ class PredictionHandler():
                  emitting_number: int = 5, set_no_consider: int = 5):
         self.network = network
         self.preproc_params = preproc_params
-        self.dictionary = {0: 'idle', 1: 'swipe_right', 2: 'swipe_left', 3: 'rotate'}
+        # self.dictionary = {0: 'idle', 1: 'swipe_right', 2: 'swipe_left', 3: 'rotate'}
+        self.labels = LabelsOptional
         self.emitting_number = emitting_number
         self.set_no_consider = set_no_consider
         self.no_consider = 0
@@ -36,7 +39,9 @@ class PredictionHandler():
     def make_prediction_for_live(self, resampled_df: pd.DataFrame) -> np.array: 
         # print(resampled_df)
         # print("net_size", self.preproc_params.num_timesteps)
+        # t1 = time.perf_counter()
         frames_preproc, _ = create_X(resampled_df, self.preproc_params)
+        # print('create_x time', time.perf_counter() - t1)
         frames_preproc = self.network.scaler.transform(frames_preproc)
         self.network.forward_prop(frames_preproc)
         self.prediction = softmax2one_hot(self.network.O[-1].T)
@@ -44,7 +49,7 @@ class PredictionHandler():
 
     def compute_events(self, prediction: np.array) -> str:
         predicted_value = np.argmax(prediction)
-        print(predicted_value)
+        # print(predicted_value)
         self.iterated.append(predicted_value)
         self.iterated.pop(0)
         if predicted_value == 0:
@@ -55,8 +60,9 @@ class PredictionHandler():
             if self.no_consider == 0:
                 counter = self.iterated.count(predicted_value)
                 if counter >= self.emitting_number:
-                    self.events.append(self.dictionary[predicted_value])
-                    print(self.dictionary[predicted_value])
+                    # self.events.append(self.dictionary[predicted_value])
+                    self.events.append(self.labels(predicted_value).name)
+                    # print(self.labels(predicted_value).name)
                     # set counter to number of idles before a gesture can be detected:
                     self.no_consider = self.set_no_consider
                 else:
