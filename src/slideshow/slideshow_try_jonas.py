@@ -78,6 +78,9 @@ def call_resample(mediapipe_queue: multiprocessing.Queue, resample_queue: multip
         # print('resample time: ', time.perf_counter() - t)
         # t = time.perf_counter()
         frame, timestamp = mediapipe_queue.get(block=True)
+
+        # TODO: hier no look netz sachen aufrufen und wenn no look, dann skippen
+        
         # counter += 1
         # if counter < 2:
         #     continue

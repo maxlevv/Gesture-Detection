@@ -32,12 +32,12 @@ def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Man
     if mode == 'train':
         f1_np = np.array(neural_net.f1_score_hist)
         for label in Labels:
-            ax.plot(f1_np[:, label.value], label=str(label.name))
+            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > 0.6], f1_np[:, label.value][f1_np[:, label.value] > 0.6], label=str(label.name))
         ax.set_title('train_f1_score')
     elif mode == 'val':
         f1_np = np.array(neural_net.f1_score_val_hist)
         for label in Labels:
-            ax.plot(f1_np[:, label.value], label=str(label.name))
+            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > 0.6], f1_np[:, label.value][f1_np[:, label.value] > 0.6], label=str(label.name))
         ax.set_title('val_f1_score')
     
     ax.set_xlabel('epochs')
@@ -50,10 +50,12 @@ def generate_mean_f1_score_plot(neural_net: FCNN, ax: plt.axes):
     # num_classes = neural_net.layer_list[-1]  wäre auch möglich
 
     f1_train_np = np.array(neural_net.f1_score_hist)
-    ax.plot(np.mean(f1_train_np, axis=1), label='mean f1 train')
+    f1_train_mean = np.mean(f1_train_np, axis=1)
+    ax.plot(np.arange(len(f1_train_mean))[f1_train_mean > 0.8], f1_train_mean[f1_train_mean > 0.8], label='mean f1 train')
     
     f1_val_np = np.array(neural_net.f1_score_val_hist)
-    ax.plot(np.mean(f1_val_np, axis=1), label='mean f1 val')
+    f1_val_mean = np.mean(f1_val_np, axis=1)
+    ax.plot(np.arange(len(f1_val_mean))[f1_val_mean > 0.8], f1_val_mean[f1_val_mean > 0.8], label='mean f1 val')
     
     ax.set_title('mean f1_score')
     
