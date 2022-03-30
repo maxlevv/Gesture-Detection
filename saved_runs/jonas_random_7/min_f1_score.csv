@@ -1,0 +1,2 @@
+,activation function,epochs,batch size,lr,weight decay,min_f1_train,min_f1_val
+0,leaky_relu,1000,156288,0.001,0,0.9086124633095057,0.8621782185642981
