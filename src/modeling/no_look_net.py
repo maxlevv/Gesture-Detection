@@ -100,12 +100,12 @@ label_encodings_inverse = {
 
 
 df = pd.read_csv(
-    '/home/nina/Documents/4_Machine_Learning_for_User_Interfaces/software projects/ml_dev_repo/data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
+    '../../data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
 X = preprocess(df)
 Y_g = df.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
 
 df_val = pd.read_csv(
-    '/home/nina/Documents/4_Machine_Learning_for_User_Interfaces/software projects/ml_dev_repo/data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
+    '../../data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
 X_val = preprocess(df_val)
 Y_g_val = df_val.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
 
@@ -114,14 +114,14 @@ batch_size = 64
 epochs = 10
 
 net = train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val)
-save_path = Path('/home/nina/Documents/4_Machine_Learning_for_User_Interfaces/software projects/ml_dev_repo/saved_runs/no_look')
+save_path = Path('../../saved_runs/no_look')
 
 save_folder_path = net.save_run(save_path,
              'first_run_nina_no_look', author='Nina', data_file_name='test',
              lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X.shape[0],
              description="test")
 
-# load_path = Path('/home/nina/Documents/4_Machine_Learning_for_User_Interfaces/software projects/ml_dev_repo/saved_runs/no_look/first_run_nina_no_look/first_run_nina_no_look/2022-03-31_19_1-1')
+# load_path = Path('../../saved_runs/no_look/first_run_nina_no_look/first_run_nina_no_look/2022-03-31_19_1-1')
 # net = FCNN.load_run(load_path)
 # predict(df, net)
 
