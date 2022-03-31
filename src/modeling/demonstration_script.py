@@ -10,7 +10,7 @@ from helper import one_hot_encoding
 """ Demo script to show the basic usage of the framework implemented in the class FCNN using the mnist_helper data set"""
 
 download_folder = "../../data/mnist_helper"
-#mnist_downloader.download_and_unzip(download_folder)
+mnist_downloader.download_and_unzip(download_folder)
 
 mndata = MNIST('../../data/mnist', return_type="numpy")
 
