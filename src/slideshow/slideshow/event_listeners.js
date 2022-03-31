@@ -13,11 +13,11 @@ socket.onmessage = function(event) {
       break;
     case "up":
       console.log("received 'up' event");
-      Reveal.right();
+      Reveal.up();
       break;
     case "down":
       console.log("received 'down' event");
-      Reveal.left();
+      Reveal.down();
       break;
     case "rotate":
       console.log("received 'rotate' event");
