@@ -18,3 +18,9 @@ def d_categorical_cross_entropy_with_softmax(z:np.array, y_one_hot:np.array):
     # z (n x b); y_one_hot (b x n)
     # res (b x n)
     return softmax(z).T - y_one_hot
+
+def mse(h:np.array, y:np.array):
+    return np.mean(np.power(h - y, 2), axis=0)
+
+def d_mse(h:np.array, y:np.array):
+    return np.mean(2 * (h - y), axis=0)
