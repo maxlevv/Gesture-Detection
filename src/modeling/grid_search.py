@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from neural_network import FCNN
+from modeling.neural_network import FCNN
 #from preprocessing.preprocessing_functions import Labels
 from preprocessing.preprocessing_functions import LabelsMandatory
 from preprocessing.preprocessing_functions import LabelsOptional
-from feature_scaling import StandardScaler
-from evaluation.evaluate import evaluate_neural_net
+from modeling.feature_scaling import StandardScaler
 import matplotlib.pyplot as plt
 
 from process_videos.helpers.colors import bcolors
