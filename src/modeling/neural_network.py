@@ -1,24 +1,25 @@
+import sys
+sys.path.append(r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src')
 import numpy as np
 from typing import List, Dict, Tuple, Callable
 import matplotlib.pyplot as plt
 from pathlib import Path
-from modeling.gradient_checking import check_gradient, check_gradient_of_neural_net
 from tqdm import tqdm
-from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
+from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax, mse, d_mse
 from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
 from modeling.feature_scaling import StandardScaler
 from modeling.save_and_load import save_run, load_run
-from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
-# from evaluation.evaluate import evaluate_neural_net 
+from evaluation.metrics import f1_score, calc_confusion_matrix
 from modeling.helper import softmax2one_hot
-from modeling import gradient_checking
+
 
 
 
 class FCNN:
 
     def __init__(self, input_size: int, layer_list: List[float], bias_list: List[int], activation_funcs: List, loss_func: str, 
-                       lr=None, scaler=None, loss_hist=[], acc_hist=[], val_acc_hist=[], f1_score_hist=[], f1_score_val_hist=[]) -> None:
+                       lr=None, scaler=None, loss_hist=[], acc_hist=[], val_acc_hist=[], f1_score_hist=[], f1_score_val_hist=[],
+                       calc_metrics_func: Callable= None, evaluate_model_func: Callable=None) -> None:
         
         self.n = [([input_size] + layer_list)[i] + bias for i, bias in enumerate(bias_list + [0])]
         self.bias_list = bias_list
@@ -57,8 +58,14 @@ class FCNN:
         self.f1_score_val_hist = f1_score_val_hist
 
         self.num_samples = None
-        self.idle_weight = None
-        self.non_idle_weight = None
+        self.balancing_class_weight = None
+        self.non_balancing_class_weight = None
+
+        self.calc_metrics_func = calc_metrics_func
+        self.metrics_res = []
+
+        self.evaluate_model_func = evaluate_model_func
+
 
         self._activation_func_dict = {
             'sigmoid': sigmoid,
@@ -74,6 +81,8 @@ class FCNN:
             'cross_entropy': cross_entropy,
             'cross_entropy_d': d_cross_entropy,
             'categorical_cross_entropy': categorical_cross_entropy,
+            'mse': mse,
+            'd_mse': d_mse,
         }
 
         # check for inconsistencies
@@ -182,8 +191,8 @@ class FCNN:
         self.f1_score_val_hist = []
 
         self.num_samples = None
-        self.idle_weight = None
-        self.non_idle_weight = None
+        self.balancing_class_weight = None
+        self.non_balancing_class_weight = None
 
 
     def check_and_correct_shapes(self, X:np.array, Y_g:np.array):
@@ -257,10 +266,10 @@ class FCNN:
             self.loss = self.loss_func(self.O[-1].T, Y_g) + (self.lambd / (2 * np.shape(self.O[-1])[1]) * sum)
 
 
-    def apply_label_weighting(self, gradient_batch_tensor: np.array, Y_g: np.array):
+    def apply_label_weighting(self, gradient_batch_tensor: np.array, Y_g: np.array, balanc_index: int = 0):
         # gradient_batch_tensor shape: (n_(i+1) x n_i x b)
-        label_weights = np.ones((Y_g.shape[0])) * self.non_idle_weight
-        label_weights[Y_g[:, 0] == 1] = self.idle_weight
+        label_weights = np.ones((Y_g.shape[0])) * self.non_balancing_class_weight
+        label_weights[Y_g[:, balanc_index] == 1] = self.balancing_class_weight
         return gradient_batch_tensor * label_weights[np.newaxis, np.newaxis, :]
 
     def backprop(self, Y_g:np.array):
@@ -303,7 +312,7 @@ class FCNN:
 
 
             gradient_batch_tensor = dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :]    # (n_(i+1) x n_i x b)
-            gradient_batch_tensor = self.apply_label_weighting(gradient_batch_tensor, Y_g)  # (n_(i+1) x n_i x b)
+            if self.gradient_label_weighting_bool: gradient_batch_tensor = self.apply_label_weighting(gradient_batch_tensor, Y_g)  # (n_(i+1) x n_i x b)
             self.dW.insert(0, np.mean(gradient_batch_tensor, axis=2))                       # (n_(i+1) x n_i)    
             
 
@@ -342,14 +351,13 @@ class FCNN:
 
     
     def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam', X_val: np.array = None, Y_g_val: np.array = None):
-        # TODO: I dont know if it is necessary to shuffle new in every epoch or if it can be done once for every epoch
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
 
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
 
-        while len(remaining_indices > 0):
+        while len(remaining_indices):
 
             # get the indices for the next batch with batch_size or just the last few in the last batch
             end_batch_index = np.min([len(remaining_indices), batch_size])
@@ -374,30 +382,28 @@ class FCNN:
             self.forward_prop(X_val)
             self.calc_loss(Y_g_val)
             Y_val = self.O[-1].T
-            acc, val_acc, f1_scores, f1_scores_val = self.calc_stats(Y, Y_g, Y_val, Y_g_val)
+            if not (self.loss_func_str == 'mse' and len(Y_g.shape) == 1):
+                acc, val_acc, f1_scores, f1_scores_val = self.calc_stats(Y, Y_g, Y_val, Y_g_val)
 
-            self.val_acc_hist.append(val_acc)
-            self.f1_score_val_hist.append(f1_scores_val)
+                self.val_acc_hist.append(val_acc)
+                self.f1_score_val_hist.append(f1_scores_val)
+                self.acc_hist.append(acc)
+                self.f1_score_hist.append(f1_scores)
         else:
-            acc, f1_scores = self.calc_stats(Y, Y_g)
+            if not (self.loss_func_str == 'mse' and len(Y_g.shape) == 1):
+                acc, f1_scores = self.calc_stats(Y, Y_g)
 
-        self.acc_hist.append(acc)
-        self.f1_score_hist.append(f1_scores)
+                self.acc_hist.append(acc)
+                self.f1_score_hist.append(f1_scores)
 
 
     def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam', weight_decay:float = 0, lambd:float = 0,
-        X_val: np.array = None, Y_g_val: np.array = None):
+        X_val: np.array = None, Y_g_val: np.array = None, gradient_label_weighting: bool = False):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
 
-        self.calc_gradient_label_weights(Y_g)
-
-        # scaling the data with the specified scaler instance
-        # TODO: does y_d need to be scaled here?
-        
-        # this sould be done elsewhere, as only train data goes into fit()
-        # self.scaler.fit(X)
-        # X = self.scaler.transform(X)
+        self.gradient_label_weighting_bool = gradient_label_weighting
+        if gradient_label_weighting: self.calc_gradient_label_weights(Y_g)
 
         if optimizer == 'sgd':
             if weight_decay != 0:
@@ -419,13 +425,16 @@ class FCNN:
 
     def calc_stats(self, Y:np.array, Y_g:np.array, Y_val:np.array = None, Y_g_val:np.array = None):
         """
-        for classification problems -> Y_g needs to binary
+        for multiclass classification problems -> Y_g needs to binary
         """
         # if Y is None:
         #     self.forward_prop(X)
         #     Y = self.O[-1].T
+        if self.loss_func_str == 'mse':
+            raise RuntimeError('calc_stats is only for classification problems')
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
+            raise RuntimeError('calc_stats only supports multiclass classification')
         if not Y_g.shape == Y.shape:
             raise Exception('Y_g and Y shapes do not match')
 
@@ -451,12 +460,27 @@ class FCNN:
         return acc, f1_scores
 
 
-    def calc_gradient_label_weights(self, y: np.array):
+    def calc_gradient_label_weights(self, y: np.array, balanc_index: int = 0):
+        """ calculates the weights for the weighting of the different gradients when combining them to one gradient, which is then used for updating
+        two classes are supported 
+
+        Args:
+            balanc_index (int, optional): index of the class which should be balanced. Defaults to 0.
+
+        Raises:
+            RuntimeError: _description_
+            RuntimeError: _description_
+        """
+        if self.loss_func_str == 'mse':
+            raise RuntimeError('calc_gradient_label_weights is only for classification problems')
+        if len(y.shape) == 1:
+            raise RuntimeError('calc_gradient_label_weights only supports multiclass classification')
+
         self.num_samples = y.shape[0]
-        num_idle_in_train = (y[:, 0] == 1).sum() # hier wird vorrausgestzt dass das erste label in one hot das idle label ist
-        num_non_idle_in_train = self.num_samples - num_idle_in_train
-        self.idle_weight = self.num_samples / ( 2 * num_idle_in_train)
-        self.non_idle_weight = self.num_samples / ( 2 * num_non_idle_in_train)
+        num_balancing_class_in_train = (y[:, balanc_index] == 1).sum() # hier wird vorrausgestzt dass das erste label in one hot das idle label ist
+        num_non_balancing_class_in_train = self.num_samples - num_balancing_class_in_train
+        self.balancing_class_weight = self.num_samples / ( 2 * num_balancing_class_in_train)
+        self.non_balancing_class_weight = self.num_samples / ( 2 * num_non_balancing_class_in_train)
 
 
     def plot_stats(self):
@@ -468,12 +492,20 @@ class FCNN:
 
 
     def calc_metrics(self, X: np.array, y_g: np.array):
+        """here the self specified calc_metrics function is called and results are saved in metrics_res list"""
         self.forward_prop(X)
         y = self.O[-1].T
-        calc_metrics(y, y_g)
+        if not self.calc_metrics_func is None:
+            self.metrics_res.append(self.calc_metrics_func(y, y_g))
+        else:
+            raise RuntimeError('No calc_metrics_func specified')
+        
 
     def evaluate_model(self, X_train, y_train, X_val, y_val, save_plot_path:Path = None):
-        evaluate_neural_net(self, X_train, y_train, X_val, y_val, save_plot_path)
+        if not self.evaluate_model_func is None:
+            self.evaluate_model_func(self, X_train, y_train, X_val, y_val, save_plot_path)
+        else:
+            raise RuntimeError('No evalute_model_func specified')
     
 
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
@@ -495,9 +527,4 @@ class FCNN:
         print(f'Loaded run with epochs {meta_data.epochs}, batch_size {meta_data.batch_size}, num_samples {meta_data.num_samples}')
         return new_net
     
-
-    def load_weights(self, from_folder_path:Path):
-        # load all the weights without the meta data
-        W, meta_data = load_run(from_folder_path)
-        self.W = W
 
