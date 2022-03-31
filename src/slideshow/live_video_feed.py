@@ -35,7 +35,6 @@ gesture_sanic_mapping = {
     'spread': 'zoom_in',
     'flip_table': 'rotate180',
     'point': 'rotate360',
-    'rotate_left': ,
     'swipe_down': 'down',
     'swipe_up': 'up'
 }

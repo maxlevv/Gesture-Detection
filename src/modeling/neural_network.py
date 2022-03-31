@@ -203,8 +203,8 @@ class FCNN:
         """
         if not self.W:
             raise Exception('W needs to be initialized first')
-        if not self.input_size == X.shape[1]:
-            raise Exception('Input shape is not correct')
+        # if not self.input_size == X.shape[1]:
+        #     raise Exception('Input shape is not correct')
         for i, W in enumerate(self.W):
             if not (W.shape[1] == self.n[i] and W.shape[0] == self.layer_list[i]):
                 raise Exception(f'W[{i}] does not match the specified architechture')
