@@ -9,7 +9,7 @@ from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, rel
 from modeling.feature_scaling import StandardScaler
 from modeling.save_and_load import save_run, load_run
 from evaluation.metrics import calc_metrics, accuracy, f1_score, calc_confusion_matrix
-from evaluation.evaluate import evaluate_neural_net 
+# from evaluation.evaluate import evaluate_neural_net 
 from modeling.helper import softmax2one_hot
 from modeling import gradient_checking
 
