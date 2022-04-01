@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List
 from evaluation.metrics import generate_confusion_plot
 from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
 from modeling.grid_search import generate_dataset
+from preprocessing.pca import generate_pca_dataset
 import json
 from math import factorial
 # if TYPE_CHECKING:
@@ -45,16 +46,18 @@ def generate_loss_plot(neural_net: FCNN, ax: plt.axes):
 def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Mandatory_Optional):
     # num_classes = neural_net.layer_list[-1]  wäre auch möglich
 
+    only_plot_larger_value = 0
+
     Labels = Labels_Mandatory_Optional
     if mode == 'train':
         f1_np = np.array(neural_net.f1_score_hist)
         for label in Labels:
-            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > 0.6], f1_np[:, label.value][f1_np[:, label.value] > 0.6], label=str(label.name))
+            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > only_plot_larger_value], f1_np[:, label.value][f1_np[:, label.value] > only_plot_larger_value], label=str(label.name))
         ax.set_title('train_f1_score')
     elif mode == 'val':
         f1_np = np.array(neural_net.f1_score_val_hist)
         for label in Labels:
-            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > 0.6], f1_np[:, label.value][f1_np[:, label.value] > 0.6], label=str(label.name))
+            ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > only_plot_larger_value], f1_np[:, label.value][f1_np[:, label.value] > only_plot_larger_value], label=str(label.name))
         ax.set_title('val_f1_score', fontsize=20)
     
     ax.set_xlabel('epochs', fontsize=20)
@@ -70,14 +73,15 @@ def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Man
 
 def generate_mean_f1_score_plot(neural_net: FCNN, ax: plt.axes):
     # num_classes = neural_net.layer_list[-1]  wäre auch möglich
+    only_plot_larger_value = 0
 
     f1_train_np = np.array(neural_net.f1_score_hist)
     f1_train_mean = np.mean(f1_train_np, axis=1)
-    ax.plot(np.arange(len(f1_train_mean))[f1_train_mean > 0.8], f1_train_mean[f1_train_mean > 0.8], label='mean f1 train')
+    ax.plot(np.arange(len(f1_train_mean))[f1_train_mean > only_plot_larger_value], f1_train_mean[f1_train_mean > only_plot_larger_value], label='mean f1 train')
     
     f1_val_np = np.array(neural_net.f1_score_val_hist)
     f1_val_mean = np.mean(f1_val_np, axis=1)
-    ax.plot(np.arange(len(f1_val_mean))[f1_val_mean > 0.8], f1_val_mean[f1_val_mean > 0.8], label='mean f1 val')
+    ax.plot(np.arange(len(f1_val_mean))[f1_val_mean > only_plot_larger_value], f1_val_mean[f1_val_mean > only_plot_larger_value], label='mean f1 val')
     
     ax.set_title('mean f1_score', fontsize=20)
     
@@ -319,11 +323,18 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
 
 
 def evaluate_runs(runs_folder_path:Path):
+    # train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
+    # val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
+
+    # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
+    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    
+    
     train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
     val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
 
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=False, keep_percentage=99)
+    X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=False, pca=pca)
 
     for meta_json_path in runs_folder_path.glob(r'**/*_meta.json'):
         neural_net = FCNN.load_run(meta_json_path.parent)
@@ -338,11 +349,11 @@ def evaluate_runs(runs_folder_path:Path):
 
 
 if __name__ == '__main__':
-    # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross'))
-    generate_mean_f1_overview_plot(
-        run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2')],
-        preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
-        )
+    evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_pca_gross_100'))
+    # generate_mean_f1_overview_plot(
+    #     run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2')],
+    #     preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
+    #     )
 
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from neural_network import FCNN
 import matplotlib.pyplot as plt
 from grid_search import generate_dataset
+from preprocessing.pca import generate_pca_dataset
 from evaluation.evaluate import evaluate_neural_net
 import multiprocessing
 
@@ -35,7 +36,7 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     
 
 
-    epochs = 1200
+    epochs = 1000
     activation_functions = ['relu', 'leaky_relu']
     activation_function = random.choice(activation_functions)
     activation_function = 'relu'
@@ -46,10 +47,10 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
 
                   (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
                   (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.001456),
-                  (0.00011,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
+                  (0.0011,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
                   (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
                   (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0.001456),
-                  (0.00011,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
+                  (0.0011,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
 
                 ]
     lr, batch_size, architecture, weight_decay = run_tuples[counter]
@@ -241,16 +242,19 @@ def random_search(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path,
 if __name__ == '__main__':
     train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
     val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
-    train_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train')
-    val_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation')
+    train_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train\mandatory_data')
+    val_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation\mandatory_data')
 
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
+    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+
+    X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=True, keep_percentage=99)
+    X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=True, pca=pca)
 
     # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
     #     author='Jonas', description='window10_all, ohne Nina, second big run')
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2'),
-        author='Jonas', description='window10_all, ohne Nina, second big run')
+    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'),
+        author='Jonas', description='window10_all, mit pca, ohne Nina, first big pca run')
 
     # train_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\train')
     # val_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation')

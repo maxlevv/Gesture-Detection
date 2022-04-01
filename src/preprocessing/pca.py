@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from feature_scaling import StandardScaler
+from modeling.feature_scaling import StandardScaler
 import matplotlib.pyplot as plt
 from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
 
