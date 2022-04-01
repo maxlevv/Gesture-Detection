@@ -1,4 +1,10 @@
 
+left_eye_outer: 3
+right_eye_outer: 6
+
+left_ear: 7
+right_ear: 8
+
 left_shoulder: 11
 right_shoulder: 12
 left_elbow: 13
