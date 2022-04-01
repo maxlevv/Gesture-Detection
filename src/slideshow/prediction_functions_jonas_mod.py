@@ -12,7 +12,7 @@ from modeling.helper import softmax2one_hot
 class PredictionHandler():
 
     def __init__(self, network: FCNN, preproc_params: Preprocessing_parameters, observation_window: int = 30,
-                 emitting_number: int = 5, set_no_consider: int = 5):
+                 emitting_number: int = 5, set_no_consider: int = 10):
         self.network = network
         self.preproc_params = preproc_params
         # self.dictionary = {0: 'idle', 1: 'swipe_right', 2: 'swipe_left', 3: 'rotate'}
@@ -24,6 +24,7 @@ class PredictionHandler():
         #self.iterated = deque(maxlen=observation_window)
         self.prediction = None
         self.events = None
+        self.rotate_emitting_number = 8
 
     def initialize_events(self):
         self.events = []
@@ -59,12 +60,17 @@ class PredictionHandler():
         self.iterated.pop(0)
         if predicted_value == 0:
             self.events.append("idle")
-            if self.no_consider > 0 and self.iterated[-1] == 0:  #5x "idle" (NICHT direkt) hintereinander TODO
+            if self.no_consider > 0 and self.iterated[-2] == 0:  #5x "idle" (NICHT direkt) hintereinander TODO
                 self.no_consider -= 1
         elif not predicted_value == 0:
             if self.no_consider == 0:
+                if predicted_value == LabelsOptional.rotate.value or predicted_value == LabelsOptional.rotate_left.value:
+                    lokal_emitting_number = self.rotate_emitting_number
+                else:
+                    lokal_emitting_number = self.emitting_number
                 counter = self.iterated.count(predicted_value)
-                if counter >= self.emitting_number:
+                if counter >= lokal_emitting_number:
+                    # print('lokal emitting number ', lokal_emitting_number)
                     # self.events.append(self.dictionary[predicted_value])
                     self.events.append(self.labels(predicted_value).name)
                     # print('confidence' , self.network.O[-1].T[self.prediction.astype(bool)])

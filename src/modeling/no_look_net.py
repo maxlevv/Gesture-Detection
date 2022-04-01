@@ -8,13 +8,20 @@ import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 
 from evaluation.metrics import f1_score
-from feature_scaling import StandardScaler
-from neural_network import FCNN
+from modeling.feature_scaling import StandardScaler
+from modeling.neural_network import FCNN
 from preprocessing.preprocessing_functions import scale_to_body_size_and_dist_to_camera
 
 
 def preprocess(df):
     preprocessed: pd.DataFrame = df.loc[:, 'left_eye_outer_x'] - df.loc[:, 'right_eye_outer_x']
+    # preprocessed = pd.DataFrame()
+    # preprocessed['ear_dist'] = df.loc[:, 'left_ear_x'] - df.loc[:, 'right_ear_x']
+    # preprocessed['eye distance'] = df.loc[:, 'left_eye_outer_x'] - df.loc[:, 'right_eye_outer_x']
+    # preprocessed['eye ear distance left'] = df.loc[:, 'left_ear_x'] - df.loc[:, 'left_eye_outer_x']
+    # preprocessed['eye ear distance right'] = df.loc[:, 'right_ear_x'] - df.loc[:, 'right_eye_outer_x']
+    # print(preprocessed)
+    # print('df type', type(df))
     eye_distance = preprocessed.to_numpy()[:, np.newaxis]
     return scale_to_body_size_and_dist_to_camera(eye_distance, df)
 
