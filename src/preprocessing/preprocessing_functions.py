@@ -547,8 +547,6 @@ def create_X(df: pd.DataFrame, preproc_params: Preprocessing_parameters, verbose
 
     X = np.zeros((num_samples, num_features))
 
-    
-
     if preproc_params.difference_mode:
         print(f'{bcolors.FAIL}WARNING: difference mode is deactivated, needs refactoring{bcolors.ENDC}')
     #     X_diff, X_diff_df = calc_differences(df, preproc_params)
