@@ -82,9 +82,21 @@ class PCA():
 
 
 def generate_pca_dataset(preproc_folder_path: Path, scaler: StandardScaler = None,
-                         select_mandatory_label: bool = True, keep_percentage:float = 100):
+                         select_mandatory_label: bool = True, pca = None, keep_percentage:float = 100):
 
-    df = get_df(preproc_folder_path)
+    df = None
+    for preproc_csv_file_path in preproc_folder_path.glob('**/*_preproc.csv'):
+
+        if 'nina' in str(preproc_csv_file_path):
+            print(f'{preproc_csv_file_path} continue !')
+            continue
+        print('using', preproc_csv_file_path)
+
+        next_df = pd.read_csv(preproc_csv_file_path, sep=' *,', engine='python')
+        if df is None:
+            df = next_df
+        else:
+            df = pd.concat([df, next_df], axis=0)
 
     if select_mandatory_label == True:
         Labels = LabelsMandatory
@@ -93,11 +105,33 @@ def generate_pca_dataset(preproc_folder_path: Path, scaler: StandardScaler = Non
         Labels = LabelsOptional
         y = df[Labels.get_column_names()].to_numpy()
 
+    if scaler == None:
+        # standardize columns for training data
+        new_scaler = StandardScaler()
+        new_scaler.fit(df)
+        X_df = new_scaler.transform(df)
+        if pca == None:
+            new_pca = PCA()
+            new_pca.fit(X_df, keep_percentage=keep_percentage)
+            X = new_pca.transform(X_df)
+            return X, y, new_scaler, new_pca
+        else: raise Exception('scale data first')
+
+    else:
+        # validation/test data
+        X_df = scaler.transform(df)
+        if pca == None: raise Exception('pass a fitted pca object to method')
+        else:
+            X = pca.transform(X_df)
+            return X, y
+
+
+
 
 if __name__ == '__main__':
 
-    folder_path_train = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\window=10,cumsum=every_second\train')
-    folder_path_val = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\window=10,cumsum=every_second\validation')
+    folder_path_train = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train')
+    folder_path_val = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation')
     df_train = get_df(folder_path_train)
     #df_val = get_df(folder_path_val)
 
@@ -107,11 +141,11 @@ if __name__ == '__main__':
    # df_val = scaler.transform(df_val)
 
     pca = PCA()
-    pca.fit(df_train, keep_percentage=95)
+    pca.fit(df_train, keep_percentage=99)
 
-    pca.print_contributing_parameters()
+    pca.print_contributing_parameters(component=2)
 
-    X_train_pca = pca.transform(df_train)
+    #X_train_pca = pca.transform(df_train)
     #X_val_pca = pca.transform(df_val)
 
     pca.scree_plot()
