@@ -106,10 +106,10 @@ def create_PredictionHandler():
         num_shifts=1, num_timesteps=10,  # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path(r'../../saved_runs\first_run_max\2022-03-12_0_72-40-40-30-20-10-4')
-    network_path = Path(r'../../saved_runs\try_live_models\leaky_relu,ep=80,bs=512,lr=0.004814,wd=0.004551\2022-03-28_0_112-40-40-30-20-10-11')
-    network_path = Path(r'../..\saved_runs\jonas_random_4\relu,ep=800,bs=64,lr=0.000857,wd=0\2022-03-30_0_88-40-40-20-10-11')
-    network_path = Path(r'../..\saved_runs\jonas_final_gross\relu,ep=700,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-40-40-30-20-11')
+    network_path = Path('../../saved_runs/first_run_max/2022-03-12_0_72-40-40-30-20-10-4')
+    network_path = Path('../../saved_runs/try_live_models/leaky_relu,ep=80,bs=512,lr=0.004814,wd=0.004551/2022-03-28_0_112-40-40-30-20-10-11')
+    network_path = Path('../../saved_runs/jonas_random_4/relu,ep=800,bs=64,lr=0.000857,wd=0/2022-03-30_0_88-40-40-20-10-11')
+    network_path = Path('../../saved_runs/jonas_final_gross/relu,ep=700,bs=512,lr=0.000875,wd=0/2022-03-31_2_110-40-40-30-20-11')
     network = FCNN.load_run(network_path)
 
     pred_handler = PredictionHandler(network, preproc_params)

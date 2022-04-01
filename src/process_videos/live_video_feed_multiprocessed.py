@@ -6,10 +6,13 @@ from pathlib import Path
 import cv2
 import yaml
 import mediapipe as mp
+
+import no_look_net
 from helpers import data_to_csv as dtc
 import time
 import threading
 
+from neural_network import FCNN
 from preprocessing.live_preprocessing import LiveDfGenerator
 from slideshow.prediction_functions_jonas_mod import create_PredictionHandler, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera
@@ -89,6 +92,9 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
     # this is the process function for preprocessing and forward prop and event compuation
     sync_queue.put('last process is running')
 
+    no_look_path = Path('../../saved_runs/no_look/first_run_nina_no_look/2022-03-31_3_1-1')
+    no_look_neural_net = FCNN.load_run(no_look_path)
+
     t = 0
     while True:
         # print('prediction time', time.perf_counter() - t)
@@ -96,6 +102,14 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
         resampled_df = resample_queue.get(block=True)
         if resampled_df is None:
             continue
+
+        time_start = time.perf_counter()
+        no_look_labels = no_look_net.predict_labels(resampled_df.loc[resampled_df.index.max(): resampled_df.index.max() + 1], no_look_neural_net)
+        if no_look_labels.iloc[0] == 'no_look':
+            continue
+        time_stop = time.perf_counter()
+        print('no look net time', time_stop - time_start)
+
         prediction = prep_handler.make_prediction_for_live(resampled_df)
         # print('prediction', prediction)
         event = prep_handler.compute_events(prediction)
@@ -196,7 +210,7 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
 
 def test():
     run_live_mode(
-        relevant_signals_dict_yaml_path=Path(r'../../src\preprocessing\relevant_keypoint_mapping.yml'),
+        relevant_signals_dict_yaml_path=Path('../../src/preprocessing/relevant_keypoint_mapping.yml'),
         window_size=10,
         flip_bool=False
     )
