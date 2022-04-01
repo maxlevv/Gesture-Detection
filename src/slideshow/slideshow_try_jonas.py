@@ -7,10 +7,12 @@ from pathlib import Path
 import cv2
 import yaml
 import mediapipe as mp
-from process_videos.helpers import data_to_csv as dtc
+from src.process_videos.helpers import data_to_csv as dtc
 import time
 import threading
 
+from modeling.neural_network import FCNN
+from modeling import no_look_net
 from preprocessing.live_preprocessing import LiveDfGenerator
 from prediction_functions_jonas_mod import create_PredictionHandler, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera
@@ -93,6 +95,9 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
     # this is the process function for preprocessing and forward prop and event compuation
     sync_queue.put('last process is running')
 
+    # no_look_path = Path('../../saved_runs/no_look/first_run_nina_no_look/2022-04-01_4_1-1')
+    # no_look_neural_net = FCNN.load_run(no_look_path)
+
     t = 0
     while True:
         # print('prediction time', time.perf_counter() - t)
@@ -100,6 +105,16 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
         resampled_df = resample_queue.get(block=True)
         if resampled_df is None:
             continue
+
+        # time_start = time.perf_counter()
+        #no_look_labels = no_look_net.predict_labels(
+        #    resampled_df.loc[resampled_df.index.max(): resampled_df.index.max() + 1], no_look_neural_net)
+        #if no_look_labels.iloc[0] == 'no_look':
+        #    print('not looking')
+        #    continue
+        time_stop = time.perf_counter()
+        # print('no look net time', time_stop - time_start)
+
         prediction = prep_handler.make_prediction_for_live(resampled_df)
         # print('prediction', prediction)
         event = prep_handler.compute_events(prediction)
@@ -194,11 +209,11 @@ def live_events(slideshow_event_queue):
 
         # spit out the result every 100th iteration
         # if (it_counter+1) % 100 == 0:
-        #     while True:
-        #         df = resample_queue.get(block=True)
-        #         print(f"{bcolors.FAIL}{df}{bcolors.ENDC}")
-        #         if not df is None:
-        #             break
+        #    while True:
+        #        df = resample_queue.get(block=True)
+        #       print(f"{bcolors.FAIL}{df}{bcolors.ENDC}")
+        #       if not df is None:
+        #           break
 
         try:
             draw_images = draw_image_queue.get(block=False)
@@ -206,6 +221,14 @@ def live_events(slideshow_event_queue):
             cv2.waitKey(1)
         except queue.Empty:
             pass
+
+        #if it_counter % 100 == 0:
+        #    print(
+        #        f"frames_queue size: {frames_queue.qsize()}\n" + \
+        #        f"mediapipe_queue size: {mediapipe_queue.qsize()}\n" + \
+        #        f"resample_queue size: {resample_queue.qsize()}\n" + \
+        #        f"prediction_queue size: {prediction_queue.qsize()}\n" + \
+        #        f"event_queue size: {event_queue.qsize()}\n")
             
        
 
@@ -228,11 +251,16 @@ async def emitter(_request, ws):
     #
 
     gesture_sanic_mapping = {
-        'swipe_right': 'right',
-        'swipe_left': 'left',
+        'swipe_right': 'left',
+        'swipe_left': 'right',
         'rotate': 'rotate',
         'pinch': 'zoom_out',
-        'spread': 'zoom_in'
+        'spread': 'zoom_in',
+        'swipe_up': 'up',
+        'swipe_down': 'down',
+        'rotate_left': 'rotate_left',
+        'point': 'rotate360',
+        'flip_table': 'rotate180',
     }
 
     
@@ -250,14 +278,15 @@ async def emitter(_request, ws):
         try:
            event = slideshow_event_queue.get(block=False)
         except queue.Empty:
-            print('queue empty')
+            pass
+            # print('queue empty')
 
         if event:
             event = gesture_sanic_mapping[event]
         
         # event = random.choice(['right', 'left', None])
         if event:
-            print('event to be sent: ', event)
+            # print('event to be sent: ', event)
             await ws.send(event)
         else:
             await asyncio.sleep(0.5)

@@ -60,7 +60,7 @@ class ThreadedCamera(object):
                     
                     # only read every third frame
                     counter += 1
-                    if counter < 3:
+                    if counter < 2:
                         continue
                     else:
                         counter = 1
