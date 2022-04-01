@@ -29,10 +29,14 @@ app.static("/static", slideshow_root_path)
 gesture_sanic_mapping = {
     'swipe_right': 'right',
     'swipe_left': 'left',
-    # 'rotate': 'rotate',
-    'rotate': 'right',
+    'rotate': 'rotate',
+    'rotate_left': 'rotate_left',
     'pinch': 'zoom_out',
-    'spread': 'zoom_in'
+    'spread': 'zoom_in',
+    'flip_table': 'rotate180',
+    'point': 'rotate360',
+    'swipe_down': 'down',
+    'swipe_up': 'up'
 }
 
 
