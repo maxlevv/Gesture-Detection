@@ -91,53 +91,65 @@ def plot_confusion_matrix_binary(confusion_matrix, dir, file_name):
     fig.savefig(dir / file_name)
 
 
+def predict_labels(df, net):
+    h = predict(df, net)
+    prediction = pd.DataFrame(round_prediction(h)).loc[:, 0]
+    labels = prediction.map(inverse_label_encodings)
+    return labels
+
+
 label_encodings = {
     'no_look': 1,
     'idle': 0
 }
+inverse_label_encodings = {
+    1: 'no_look',
+    0: 'idle'
+}
 
-df = pd.read_csv(
-    '../../data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
-X = preprocess(df)
-Y_g = df.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
+if __name__ =='__main__':
+    df = pd.read_csv(
+        '../../data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
+    X = preprocess(df)
+    Y_g = df.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
 
-df_val = pd.read_csv(
-    '../../data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
-X_val = preprocess(df_val)
-Y_g_val = df_val.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
+    df_val = pd.read_csv(
+        '../../data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
+    X_val = preprocess(df_val)
+    Y_g_val = df_val.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
 
-lr = 0.03
-batch_size = 64
-epochs = 100
-save_path = Path('../../saved_runs/no_look')
+    lr = 0.03
+    batch_size = 64
+    epochs = 100
+    save_path = Path('../../saved_runs/no_look')
 
-# net = train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val)
-#
-# save_folder_path = net.save_run(save_path,
-#                                 'first_run_nina_no_look', author='Nina', data_file_name='test',
-#                                 lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X.shape[0],
-#                                 description="test")
+    # net = train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val)
+    #
+    # save_folder_path = net.save_run(save_path,
+    #                                 'first_run_nina_no_look', author='Nina', data_file_name='test',
+    #                                 lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X.shape[0],
+    #                                 description="test")
 
 
 
-no_look_path = save_path / 'first_run_nina_no_look'
-for dir in next(os.walk(no_look_path))[1]:
-    dir = Path(no_look_path, dir)
+    no_look_path = save_path / 'first_run_nina_no_look'
+    for dir in next(os.walk(no_look_path))[1]:
+        dir = Path(no_look_path, dir)
 
-    load_path = dir
-    net = FCNN.load_run(load_path)
+        load_path = dir
+        net = FCNN.load_run(load_path)
 
-    plot(ar=net.loss_hist, dir=dir, y_label="Loss", file_name='learning_curve.png', title="Learning Curve")
+        plot(ar=net.loss_hist, dir=dir, y_label="Loss", file_name='learning_curve.png', title="Learning Curve")
 
-    h_val = predict(df_val, net)
-    confusion_matrix = calc_confusion_matrix_binary(h_val, Y_g_val)
-    plot_confusion_matrix_binary(confusion_matrix, dir, 'Confusion_matrix.png')
-    acc = calc_acc(h_val, Y_g_val)
-    print(acc)
-    f1 = f1_score(confusion_matrix, 0)
-    print(f1)
+        h_val = predict(df_val, net)
+        confusion_matrix = calc_confusion_matrix_binary(h_val, Y_g_val)
+        plot_confusion_matrix_binary(confusion_matrix, dir, 'Confusion_matrix.png')
+        acc = calc_acc(h_val, Y_g_val)
+        print(acc)
+        f1 = f1_score(confusion_matrix, 0)
+        print(f1)
 
-    with open(dir / f'accuracy: {acc}', 'w') as _:
-        pass
-    with open(dir / f'f1: {f1}', 'w') as _:
-        pass
+        with open(dir / f'accuracy: {acc}', 'w') as _:
+            pass
+        with open(dir / f'f1: {f1}', 'w') as _:
+            pass

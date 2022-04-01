@@ -103,6 +103,7 @@ def call_preprocessing_and_forward_prop(resample_queue: multiprocessing.Queue, p
         if resampled_df is None:
             continue
 
+        print(resampled_df)
         time_start = time.perf_counter()
         no_look_labels = no_look_net.predict_labels(resampled_df.loc[resampled_df.index.max(): resampled_df.index.max() + 1], no_look_neural_net)
         if no_look_labels.iloc[0] == 'no_look':
