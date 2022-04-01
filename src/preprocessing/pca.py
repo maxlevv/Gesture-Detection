@@ -27,11 +27,13 @@ class PCA():
 
     def fit(self, df: pd.DataFrame, keep_percentage:float = 100):
         self.columns = df.columns.values
-        self.initial_data = df.to_numpy()
+        X = df.to_numpy()
+        self.initial_data = X[:, 1:]
 
         self.keep_percentage = keep_percentage
 
-        self.cov_matrix = np.cov(df, rowvar=False)
+        self.cov_matrix = np.cov(self.initial_data, rowvar=False)
+        print(self.cov_matrix.shape)
         eig_values, eig_vectors = np.linalg.eig(self.cov_matrix)    # already normalized eigenvectors
         sort_index = np.argsort(eig_values)
         self.eig_values_sorted = eig_values[sort_index[::-1]]
@@ -53,6 +55,7 @@ class PCA():
 
     def transform(self, df: pd.DataFrame):
         X = df.to_numpy()
+        X = X[:, 1:]
         if self.keep_percentage == 100:
             return X @ self.eig_vectors_sorted
         else:
@@ -104,6 +107,8 @@ def generate_pca_dataset(preproc_folder_path: Path, scaler: StandardScaler = Non
     else:
         Labels = LabelsOptional
         y = df[Labels.get_column_names()].to_numpy()
+
+    df = df.drop(LabelsOptional.get_column_names(), axis=1)
 
     if scaler == None:
         # standardize columns for training data
