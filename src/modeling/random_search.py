@@ -1,3 +1,5 @@
+import sys
+sys.path.append(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\src')
 from platform import architecture
 import numpy as np
 import pandas as pd
@@ -33,34 +35,22 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
     
 
 
-    epochs = 700
+    epochs = 1200
     activation_functions = ['relu', 'leaky_relu']
     activation_function = random.choice(activation_functions)
     activation_function = 'relu'
 
     # architecture = [40, 40, 20, 20, y_train.shape[1]]
 
-    run_tuples = [(0.000398,    32,     [30, 30, 30, y_train.shape[1]],     0),
-                  (0.000398,     4096,  [30, 30, 30, y_train.shape[1]]     , 0),
-                  (0.000398,     512,   [30, 30, y_train.shape[1]]      , 0),
-                  (0.00015,     512,    [30, 30, 30, y_train.shape[1]]      , 0),
-                  (0.000398,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
-                  (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
-                  (0.00015,     512,    [30, 30, 30, y_train.shape[1]]      , 0.0945),
-                  (0.000398,     512,   [30, 30, 30, y_train.shape[1]]      , 0.0945),
-                  (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0.0945),
-                  (0.00015,     512,    [30, 30, 30, y_train.shape[1]]      , 0.001456),
-                  (0.000398,     512,   [30, 30, 30, y_train.shape[1]]      , 0.001456),
-                  (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0.001456),
-                  (0.00015,     512,    [40, 40, 30, 20, y_train.shape[1]]      , 0),
-                  (0.000398,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
+    run_tuples = [
+
                   (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
-                  (0.00015,     512,    [40, 40, 30, 20, y_train.shape[1]]      , 0.0945),
-                  (0.000398,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.0945),
-                  (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.0945),
-                  (0.00015,     512,    [40, 40, 30, 20, y_train.shape[1]]      , 0.001456),
-                  (0.000398,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.001456),
-                  (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.001456)
+                  (0.000875,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0.001456),
+                  (0.00011,     512,   [40, 40, 30, 20, y_train.shape[1]]      , 0),
+                  (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
+                  (0.000875,     512,   [30, 30, 30, y_train.shape[1]]      , 0.001456),
+                  (0.00011,     512,   [30, 30, 30, y_train.shape[1]]      , 0),
+
                 ]
     lr, batch_size, architecture, weight_decay = run_tuples[counter]
 
@@ -97,11 +87,11 @@ def inner(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author,
 
 def random_search_multipro(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description):
     # num_iterations = 3
-    num_simultaneous_processes = 7
+    num_simultaneous_processes = 6
 
     with multiprocessing.Pool(num_simultaneous_processes) as pool:
         # res = pool.starmap(inner, [(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description)] * num_iterations )
-        res = pool.starmap(inner, [(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description, x) for x in range(21)]) # + # )  
+        res = pool.starmap(inner, [(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description, x) for x in range(6)]) # + # )  
             # [(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description, 1)]) #  + 
         #  [(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path, author, description, 2)])
 
@@ -251,12 +241,16 @@ def random_search(X_train, y_train, X_val, y_val, scaler, save_runs_folder_path,
 if __name__ == '__main__':
     train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
     val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
+    train_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train')
+    val_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation')
 
     X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
 
-    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross'),
-        author='Jonas', description='window10_all, ohne Nina')
+    # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
+    #     author='Jonas', description='window10_all, ohne Nina, second big run')
+    random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2'),
+        author='Jonas', description='window10_all, ohne Nina, second big run')
 
     # train_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\train')
     # val_folder_path = Path(r'../../data\preprocessed_frames\window=8,cumsum=every_second\validation')

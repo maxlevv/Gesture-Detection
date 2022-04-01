@@ -218,6 +218,9 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
         run_folder_f1_mean_list = []
         for meta_json in run_folder_path.glob('**/*_meta.json'):
             with open(meta_json, 'r') as meta_json_file:
+                # if 6 > counter or counter > 12:
+                #     counter += 1
+                #     continue
                 meta_data_dict = json.load(meta_json_file)
                 f1_hists_np = np.array(meta_data_dict['f1_score_val_hist'])
                 mean_f1 = np.mean(f1_hists_np, axis=1)
@@ -232,6 +235,8 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
                 table_dict['act_func'].append(meta_data_dict['activation_functions'][0])
                 table_dict['window_size'].append(preproc_params['window_size'])
                 table_dict['pattern'].append(preproc_params['pattern'])
+
+                print('counter:', counter, 'name', meta_json.parent.parent.name)
                 
 
                 counter += 1
@@ -243,11 +248,12 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
 
     fig, axs = plt.subplots(1, 2, figsize=(30, 20))
     
-    NUM_COLORS = 21
+    NUM_COLORS = 6
     cm = plt.get_cmap('gist_rainbow')
     # axs[0].set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
     
     for i, f1_mean in enumerate(f1_mean_list):
+        
         yhat = savitzky_golay(f1_mean[f1_mean > 0.8], 81, 3)
         # lines = axs[0].plot(np.arange(len(f1_mean))[f1_mean > 0.8], f1_mean[f1_mean > 0.8], label=i)
         lines = axs[0].plot(np.arange(len(f1_mean))[f1_mean > 0.8], yhat, label=i)
@@ -306,7 +312,9 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
 
     # # fig.tight_layout()
 
-    plt.show()
+    # plt.show()
+
+    fig.savefig(run_folder_paths[0] / 'overview_plot.png')
 
 
 
@@ -332,7 +340,7 @@ def evaluate_runs(runs_folder_path:Path):
 if __name__ == '__main__':
     # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross'))
     generate_mean_f1_overview_plot(
-        run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross')],
+        run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2')],
         preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
         )
 
