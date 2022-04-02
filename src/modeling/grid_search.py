@@ -23,7 +23,8 @@ def generate_dataset(preproc_folder_path: Path, scaler: StandardScaler = None, s
             continue
         print('using', preproc_csv_file_path)
 
-        next_df = pd.read_csv(preproc_csv_file_path, sep=' *,', engine='python')
+        next_df = pd.read_csv(preproc_csv_file_path,
+                              sep=' *,', engine='python')
         if df is None:
             df = next_df
         else:
@@ -76,43 +77,44 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
     x_axis = []
 
     for activation_function in activation_list:
-        
+
         for epochs in epoch_list:
             for batch_size in bsize_list:
                 for weight_decay in wdecay_list:
                     for lr in lr_list:
 
-                        print(activation_function, epochs, batch_size, weight_decay, lr)
+                        print(activation_function, epochs,
+                              batch_size, weight_decay, lr)
                         # initialize the network
-                    
+
                         architecture = [40, 40, 30, 20, 10, y_train.shape[1]]
 
                         neural_net = FCNN(
                             input_size=X_train.shape[1],
                             layer_list=architecture,
                             bias_list=[1] * len(architecture),
-                            activation_funcs=[activation_function] * (len(architecture) - 1) + ['softmax'],
+                            activation_funcs=[activation_function] *
+                            (len(architecture) - 1) + ['softmax'],
                             loss_func='categorical_cross_entropy',
                             scaler=scaler
                         )
 
                         neural_net.clear_attributes()
-                        
 
                         neural_net.init_weights()
                         neural_net.fit(X_train, y_train, lr=lr, epochs=epochs, batch_size=batch_size,
                                        optimizer='adam', weight_decay=weight_decay, X_val=X_val, Y_g_val=y_val)
 
                         save_folder_path = neural_net.save_run(save_runs_folder_path=Path(r'../../saved_runs\jonas_3_grid_gross'),
-                                            run_group_name=f'{activation_function},ep={epochs},bs={batch_size},lr={lr},wd={weight_decay}',
-                                            author='Jonas', data_file_name='', lr=lr, batch_size=batch_size, epochs=epochs,
-                                            num_samples=X_train.shape[0], description='erster Grid Search vamos')
+                                                               run_group_name=f'{activation_function},ep={epochs},bs={batch_size},lr={lr},wd={weight_decay}',
+                                                               author='Jonas', data_file_name='', lr=lr, batch_size=batch_size, epochs=epochs,
+                                                               num_samples=X_train.shape[0], description='erster Grid Search vamos')
 
-                        neural_net.evaluate_model(X_train, y_train, X_val, y_val, save_folder_path / 'metrics_plot.png')
+                        neural_net.evaluate_model(
+                            X_train, y_train, X_val, y_val, save_folder_path / 'metrics_plot.png')
 
-                        x_axis.append([activation_function, epochs, batch_size, lr, weight_decay])
-                        # f1_train.append(min(neural_net.f1_score_hist[-1]))
-                        # f1_val.append(min(neural_net.f1_score_val_hist[-1]))
+                        x_axis.append(
+                            [activation_function, epochs, batch_size, lr, weight_decay])
 
                         del neural_net
 
@@ -123,14 +125,12 @@ def grid_search(X_train, y_train, X_val, y_val, scaler):
     ax.set_title('f1 score')
     ax.set_xticks([])
     ax.table(cellText=list(map(list, zip(*x_axis))),
-             rowLabels=['activation function', 'epochs', 'batch size', 'lr', 'weight decay'],
+             rowLabels=['activation function', 'epochs',
+                        'batch size', 'lr', 'weight decay'],
              loc='bottom')
     plt.subplots_adjust(left=0.3, bottom=0.2)
 
     plt.show()
-    #while True:
-    #    import time
-    #    time.sleep(1)
     fig.savefig('grid_search_plot.png')
 
 
@@ -138,19 +138,13 @@ def do_grid_search():
     train_folder_path = Path(r'../../data\preprocessed_frames\final\train')
     val_folder_path = Path(r'../../data\preprocessed_frames\final\validation')
 
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-    X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    X_train, y_train, scaler = generate_dataset(
+        train_folder_path, select_mandatory_label=False)
+    X_val, y_val = generate_dataset(
+        val_folder_path, scaler, select_mandatory_label=False)
 
     grid_search(X_train, y_train, X_val, y_val, scaler)
 
 
-def try_things():
-    train_folder_path = Path(r'../../data\preprocessed_frames\final\train')
-
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
-
-    print('done')
-
 if __name__ == '__main__':
     do_grid_search()
-

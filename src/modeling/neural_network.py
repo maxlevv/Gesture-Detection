@@ -419,7 +419,7 @@ class FCNN:
                 self.weight_decay = weight_decay
 
         for epoch in tqdm(range(epochs)):
-            self.train(X, Y_g, batch_size, optimizer, X_val, Y_g_val)
+            self.train(X, Y_g, batch_size, optimizer)
             self.track_epoch(X, Y_g, X_val, Y_g_val)
     
 

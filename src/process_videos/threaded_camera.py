@@ -5,6 +5,7 @@ from queue import Queue
 
 from process_videos.helpers.colors import bcolors
 
+
 class ThreadedCamera(object):
     def __init__(self, src=0):
         self.capture = cv2.VideoCapture(src)
@@ -14,11 +15,6 @@ class ThreadedCamera(object):
         # X = desired FPS
         self.FPS = 1/30
         self.FPS_MS = int(self.FPS * 1000)
-
-        # Start frame retrieval thread
-        # self.thread = Thread(target=self.update, args=())
-        # self.thread.daemon = True
-        # self.thread.start()
 
         self.status = False
 
@@ -35,12 +31,8 @@ class ThreadedCamera(object):
 
     def update(self):
         while True:
-            # global prev_time
-            # print('diff', time.time() - prev_time)
-            # prev_time = time.time()
             if self.capture.isOpened():
                 (self.status, self.frame) = self.capture.read()
-            # time.sleep(self.FPS)
             time.sleep(0.01)
 
     def show_frame(self):
@@ -53,18 +45,16 @@ class ThreadedCamera(object):
         while True:
             if self.capture.isOpened():
                 current_timestamp = self.capture.get(cv2.CAP_PROP_POS_MSEC)
-                # print(bcolors.OKGREEN + "reading on timestep:" + str(current_timestamp) + bcolors.ENDC)
                 if not current_timestamp == self.last_timestamp:
 
                     self.status, frame = self.capture.read()
-                    
+
                     # only read every third frame
                     counter += 1
                     if counter < 2:
                         continue
                     else:
                         counter = 1
-                        
 
                     if first_bool:
                         first_bool = False
@@ -74,12 +64,10 @@ class ThreadedCamera(object):
                     self.last_timestamp = current_timestamp
                 else:
                     print('double frame not read')
-                    # print("timestamp_queue: ", self.timestamp_queue.get(), "###")
             else:
                 print(bcolors.FAIL + "capture closed" + bcolors.ENDC)
-            # print(f"{bcolors.OKBLUE}threaded_camera_queue size: {self.frame_queue.qsize()}{bcolors.ENDC}")
             time.sleep(0.01)
-    
+
     def get_from_queue(self):
         """ 
         using the threaded camera in multiprocessing the queue gets full before the processes really start going 
@@ -91,7 +79,6 @@ class ThreadedCamera(object):
         if self.get_counter == 2:
             self.empty_queue()
         return self.frame_queue.get(), self.timestamp_queue.get()
-    
 
     def empty_queue(self):
         for _ in range(self.queue_len):

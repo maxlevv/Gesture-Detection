@@ -16,16 +16,18 @@ def generate_confusion_plot(h: np.array, y: np.array, ax: plt.axes = None, title
     elif y.shape[1] == 11:
         Labels = LabelsOptional
     else:
-        raise Exception("number of Labels is not 4 (mandatory) or 11 (optional)")
+        raise Exception(
+            "number of Labels is not 4 (mandatory) or 11 (optional)")
 
     conf = calc_confusion_matrix(h, y)
-    plot_confusion_matrix(conf, ax=ax, title=title, Labels_Mandatory_Optional=Labels)
-    
+    plot_confusion_matrix(conf, ax=ax, title=title,
+                          Labels_Mandatory_Optional=Labels)
 
 
 def calc_confusion_matrix(h: np.array, y: np.array):
     if np.shape(h) != np.shape(y):
-        raise Exception("ground truth vector y and hypothesis h are not the same size")
+        raise Exception(
+            "ground truth vector y and hypothesis h are not the same size")
 
     n = y.shape[1]
     matrix = np.zeros(shape=(n, n), dtype='int')
@@ -36,22 +38,24 @@ def calc_confusion_matrix(h: np.array, y: np.array):
 
     for i in range(n):
         for j in range(n):
-            counter = ((h_onehot[:,i] == 1) & ((y[:,j]) == 1)).sum()
-            matrix[i,j] = counter
+            counter = ((h_onehot[:, i] == 1) & ((y[:, j]) == 1)).sum()
+            matrix[i, j] = counter
 
     return matrix
 
 
-def plot_confusion_matrix(confusion_matrix: np.array, Labels_Mandatory_Optional , fig: plt.figure = None, ax: plt.axes = None, title: str = None, verbose: bool = False) -> plt.figure:
-    # fig situation hier is bisschen weird nicht wundern 
+def plot_confusion_matrix(confusion_matrix: np.array, Labels_Mandatory_Optional, fig: plt.figure = None, 
+                          ax: plt.axes = None, title: str = None, verbose: bool = False) -> plt.figure:
+    # fig situation hier is bisschen weird nicht wundern
 
-    if ax is None: 
+    if ax is None:
         fig, ax = plt.subplots(figsize=(10, 8))
 
     Labels = Labels_Mandatory_Optional
-    confusion_df = pd.DataFrame(data=confusion_matrix, columns=Labels.get_label_list(), index=Labels.get_label_list())
+    confusion_df = pd.DataFrame(
+        data=confusion_matrix, columns=Labels.get_label_list(), index=Labels.get_label_list())
 
-    sns.heatmap(confusion_df, annot=confusion_matrix , fmt="", ax=ax)
+    sns.heatmap(confusion_df, annot=confusion_matrix, fmt="", ax=ax)
     ax.set_xlabel("ground truth")
     ax.set_ylabel("predicted")
     if not title:
@@ -59,21 +63,21 @@ def plot_confusion_matrix(confusion_matrix: np.array, Labels_Mandatory_Optional 
     else:
         ax.set_title(title)
 
-    if verbose: fig.show()
+    if verbose:
+        fig.show()
 
-    
 
-# attribute Auswahl als Integer entsprechend der Nummerierung der Label in der Klasse preprocessing_functions.Labels
 def precision(confusion_matrix: np.array, attribute: int):
-    if confusion_matrix[attribute,:].sum() == 0:
+    # attribute as int according to the class preprocessing_functions.Labels
+    if confusion_matrix[attribute, :].sum() == 0:
         return 0
-    return confusion_matrix[attribute, attribute] / confusion_matrix[attribute,:].sum()
+    return confusion_matrix[attribute, attribute] / confusion_matrix[attribute, :].sum()
 
 
 def recall(confusion_matrix: np.array, attribute: int):
-    if confusion_matrix[:,attribute].sum() == 0:
+    if confusion_matrix[:, attribute].sum() == 0:
         return 0
-    return confusion_matrix[attribute, attribute] / confusion_matrix[:,attribute].sum()
+    return confusion_matrix[attribute, attribute] / confusion_matrix[:, attribute].sum()
 
 
 def f1_score(confusion_matrix: np.array, attribute: int):
@@ -92,11 +96,13 @@ def calc_metrics(h: np.array, y: np.array):
     elif y.shape[1] == 11:
         Labels = LabelsOptional
     else:
-        raise Exception("number of Labels is not 4 (mandatory) or 11 (optional)")
+        raise Exception(
+            "number of Labels is not 4 (mandatory) or 11 (optional)")
 
     # accuracy
     conf_matrix = calc_confusion_matrix(h, y)
-    plot_confusion_matrix(conf_matrix, verbose=False, Labels_Mandatory_Optional=Labels)
+    plot_confusion_matrix(conf_matrix, verbose=False,
+                          Labels_Mandatory_Optional=Labels)
     f1_scores = []
     precisions = []
     recalls = []
@@ -105,11 +111,10 @@ def calc_metrics(h: np.array, y: np.array):
         precisions.append(precision(conf_matrix, label.value))
         recalls.append(recall(conf_matrix, label.value))
 
-    df = pd.DataFrame(columns=Labels.get_label_list(), index=['f1_score', 'precision', 'recall'])
+    df = pd.DataFrame(columns=Labels.get_label_list(), index=[
+                      'f1_score', 'precision', 'recall'])
     df.loc['f1_score', :] = f1_scores
     df.loc['precision', :] = precisions
     df.loc['recall', :] = recalls
 
     print(df)
-
-
