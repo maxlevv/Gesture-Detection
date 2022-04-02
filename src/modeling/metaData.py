@@ -31,7 +31,7 @@ class MetaData():
             val_acc_hist: List[int] = None,
             f1_score_hist: List[int] = None,
             f1_score_val_hist: List[int] = None,
-            ):
+    ):
 
         self.name = name
         # will be determined when saving by counting the number of items in the run_group folder
@@ -88,11 +88,11 @@ class MetaData():
             num_samples=num_samples,
             description=description,
             name=name,
-            loss_hist = neural_net.loss_hist,
-            acc_hist = neural_net.acc_hist,
-            val_acc_hist = neural_net.val_acc_hist,
-            f1_score_hist = neural_net.f1_score_hist,
-            f1_score_val_hist = neural_net.f1_score_val_hist,
+            loss_hist=neural_net.loss_hist,
+            acc_hist=neural_net.acc_hist,
+            val_acc_hist=neural_net.val_acc_hist,
+            f1_score_hist=neural_net.f1_score_hist,
+            f1_score_val_hist=neural_net.f1_score_val_hist,
         )
 
     @classmethod

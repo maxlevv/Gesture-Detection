@@ -1,12 +1,14 @@
-# ml_dev_repo
+# Gesture Detection - Machine Learning Team 16 Repository
 
-Project for developing the final project
+Respository for the final project of the Machine Learning course
 
-## Requirements
-- python version 3.7.9 (this one works with mediapipe others may not)
+## Requirements for this repository
+- python version 3.7.9 
+- packages: requirments.txt
+
 
 ## Structure
-- data : (for larg training sets later on add this folder to gitignore and store only locally and maybe on some cloud platform)
+- data : 
   - raw frames : csv files processed by mediapipe raw
   - labeled frames : labeled csv files with annotation txt files produced by ELAN
   - preprocessed frames : preprocessed csv files

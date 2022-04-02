@@ -350,7 +350,7 @@ class FCNN:
                 raise RuntimeError(f'Optimizer was not specified correctly: {optimizer}')
 
     
-    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam', X_val: np.array = None, Y_g_val: np.array = None):
+    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam'):
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
 
@@ -419,7 +419,7 @@ class FCNN:
                 self.weight_decay = weight_decay
 
         for epoch in tqdm(range(epochs)):
-            self.train(X, Y_g, batch_size, optimizer, X_val, Y_g_val)
+            self.train(X, Y_g, batch_size, optimizer)
             self.track_epoch(X, Y_g, X_val, Y_g_val)
     
 
@@ -482,13 +482,6 @@ class FCNN:
         self.balancing_class_weight = self.num_samples / ( 2 * num_balancing_class_in_train)
         self.non_balancing_class_weight = self.num_samples / ( 2 * num_non_balancing_class_in_train)
 
-
-    def plot_stats(self):
-        fig, axes = plt.subplots(1, 2, figsize=(10, 6))
-        axes[0].plot(self.loss_hist)
-        axes[1].plot(self.acc_hist)
-        # fig.show()
-        return fig
 
 
     def calc_metrics(self, X: np.array, y_g: np.array):

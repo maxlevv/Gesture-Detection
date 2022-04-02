@@ -9,10 +9,10 @@ from helper import one_hot_encoding
 
 """ Demo script to show the basic usage of the framework implemented in the class FCNN using the mnist_helper data set"""
 
-download_folder = "../../data/mnist_helper"
+download_folder = r"../../data/mnist_helper"
 mnist_downloader.download_and_unzip(download_folder)
 
-mndata = MNIST('../../data/mnist', return_type="numpy")
+mndata = MNIST(r'../../data/mnist_helper', return_type="numpy")
 
 images_train, labels_train = mndata.load_training()
 images_validation, labels_validation = mndata.load_testing()
@@ -29,13 +29,13 @@ X_val = scaler.transform(images_validation)
 
 """ Create FCNN object """
 neural_net = FCNN(
-        input_size=X_train.shape[1],
-        layer_list=[30, y_g.shape[1]],
-        bias_list=[1, 1],
-        activation_funcs=['sigmoid'] * 1 + ['softmax'],
-        loss_func='categorical_cross_entropy',
-        scaler=scaler
-    )
+    input_size=X_train.shape[1],
+    layer_list=[30, y_g.shape[1]],
+    bias_list=[1, 1],
+    activation_funcs=['sigmoid'] * 1 + ['softmax'],
+    loss_func='categorical_cross_entropy',
+    scaler=scaler
+)
 
 """ Train the model """
 neural_net.init_weights()
