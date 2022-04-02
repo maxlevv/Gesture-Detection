@@ -65,10 +65,10 @@ def converting():
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\rotate_right')
     #video_folder_path = Path(r'C:\Users\Max\PycharmProjects\ml_dev_repo\videos\swipe_right')
     #video_folder_path = Path(r'C:\Users\Sepp\Videos\ml_projekt_test')
-    video_folder_path = Path(r'C:\Users\Max\Documents\Master Würzburg\Machine Learning\final-project-getting-started\demo_data\Videos Part 2 mp4\point')
+    video_folder_path = Path(r'C:\Users\hornh\Documents\ml_projekt_videos\val_vids_tamara')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\rotate_right')
     #raw_frames_folder_path = Path(r'..\..\data\raw_frames\swipe_right')
-    raw_frames_folder_path = Path(r'C:\Users\Max\Desktop')
+    raw_frames_folder_path = Path(r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\raw_frames\tamara_val')
     video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
 
 
