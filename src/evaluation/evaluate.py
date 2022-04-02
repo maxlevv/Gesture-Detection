@@ -252,7 +252,7 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
 
     fig, axs = plt.subplots(1, 2, figsize=(30, 20))
     
-    NUM_COLORS = 6
+    NUM_COLORS = len(f1_mean_list)
     cm = plt.get_cmap('gist_rainbow')
     # axs[0].set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
     
@@ -329,12 +329,23 @@ def evaluate_runs(runs_folder_path:Path):
     # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
     
-    
-    train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
-    val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
+    train_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train\mandatory_data')
+    val_folder_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation\mandatory_data')
 
-    X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=False, keep_percentage=99)
-    X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=False, pca=pca)
+    # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
+    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+
+    X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=True, keep_percentage=99)
+    X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=True, pca=pca)
+
+    # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
+    #     author='Jonas', description='window10_all, ohne Nina, second big run')
+    
+    # train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
+    # val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
+
+    # X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=False, keep_percentage=99)
+    # X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=False, pca=pca)
 
     for meta_json_path in runs_folder_path.glob(r'**/*_meta.json'):
         neural_net = FCNN.load_run(meta_json_path.parent)
@@ -349,11 +360,11 @@ def evaluate_runs(runs_folder_path:Path):
 
 
 if __name__ == '__main__':
-    evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_pca_gross_100'))
-    # generate_mean_f1_overview_plot(
-    #     run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_final_gross_2')],
-    #     preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
-    #     )
+    # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
+    generate_mean_f1_overview_plot(
+        run_folder_paths=[Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca')],
+        preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
+        )
 
 
 
