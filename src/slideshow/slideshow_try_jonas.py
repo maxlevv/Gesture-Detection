@@ -12,7 +12,7 @@ import time
 import threading
 
 from preprocessing.live_preprocessing import LiveDfGenerator
-from prediction_functions_jonas_mod import create_PredictionHandler, PredictionHandler
+from prediction_functions_jonas_mod import create_PredictionHandler_for_live, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera
 from process_videos.helpers.colors import bcolors
 
@@ -151,7 +151,7 @@ def live_events(slideshow_event_queue):
             window_size=window_size, 
             skip_value=1)
 
-    pred_handler = create_PredictionHandler()
+    pred_handler = create_PredictionHandler_for_live()
     pred_handler.initialize_events()
 
     with open(relevant_signals_dict_yaml_path, "r") as yaml_file:
