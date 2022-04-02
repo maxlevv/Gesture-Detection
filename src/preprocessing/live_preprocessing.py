@@ -48,7 +48,8 @@ class LiveDfGenerator:
         frames.index = frames.index.astype(int)
         return frames.round(5)
     
-    def resample(self, df: pd.DataFrame):
+    @classmethod
+    def resample(cls, df: pd.DataFrame):
         # the df should have timestamp as the index, in int format
 
         # src: https://stackoverflow.com/questions/47148446/pandas-resample-interpolate-is-producing-nans
@@ -57,12 +58,16 @@ class LiveDfGenerator:
         df.index = pd.to_timedelta(df.index, unit="ms")
         old_index = df.index
         new_index = pd.timedelta_range(old_index.min(), old_index.max(), freq='33ms')
-        df = df.reindex(old_index.union(new_index))
+
+        # this was added for test mode, but should not conflict with live mode
+        df = df[~df.index.duplicated(keep='first')]
+
+        df = df.reindex(old_index.union(new_index).drop_duplicates())
         df = df.interpolate()
         df = df.reindex(new_index)
-        df = self.make_index_look_nice(df)
+        df = cls.make_index_look_nice(df)
         # print('df type before reset index', type(df))
-        df = self.reset_index(df)
+        df = cls.reset_index(df)
 
         # print('df in resampling', df)
         # print('df type in resampling', type(df))
@@ -71,15 +76,16 @@ class LiveDfGenerator:
         
         return df
 
-
-    def make_index_look_nice(self, df):
+    @classmethod
+    def make_index_look_nice(cls, df):
         df.index = df.index - list(df.index)[0]
         df.index = df.index.astype(int)
         df.index = df.index * 1e-6
         df.index = df.index.astype(int) 
         return df
     
-    def reset_index(self, df):
+    @classmethod
+    def reset_index(cls, df):
         df = df.reset_index()
         df.columns = [column.replace('index', 'timestamp') for column in df.columns]
         return df

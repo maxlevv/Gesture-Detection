@@ -14,7 +14,7 @@ import threading
 
 from neural_network import FCNN
 from preprocessing.live_preprocessing import LiveDfGenerator
-from slideshow.prediction_functions_jonas_mod import create_PredictionHandler, PredictionHandler
+from slideshow.prediction_functions_jonas_mod import create_PredictionHandler_for_live, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera
 from process_videos.helpers.colors import bcolors
 
@@ -135,7 +135,7 @@ def run_live_mode(relevant_signals_dict_yaml_path, window_size, flip_bool):
             window_size=window_size, 
             skip_value=1)
 
-    pred_handler = create_PredictionHandler()
+    pred_handler = create_PredictionHandler_for_live()
     pred_handler.initialize_events()
 
     with open(relevant_signals_dict_yaml_path, "r") as yaml_file:
