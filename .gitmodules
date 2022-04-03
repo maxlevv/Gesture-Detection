@@ -1,0 +1,3 @@
+[submodule "neural_net_pack"]
+	path = neural_net_pack
+	url = https://gitlab2.informatik.uni-wuerzburg.de/hci/teaching/courses/machine-learning/student-submissions/ws21/Team-16/neural_net_pack.git
