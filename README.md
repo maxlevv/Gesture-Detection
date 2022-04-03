@@ -24,18 +24,22 @@ In order to run the prediction mode for controlling the slideshow, switch to the
 
 ## Structure
 - data : 
-  - raw frames : csv files processed by mediapipe raw
+  - raw frames : csv files processed by mediapipe, raw mediapipe features
+  - elan_annotations: txt files with annotations from ELAN labeling tool
   - labeled frames : labeled csv files with annotation txt files produced by ELAN
   - preprocessed frames : preprocessed csv files
+  - mnist_helper: MNIST data set
   
 &nbsp;
 
 - src :
   - preprocessing : scripts and notebooks for data exploration and functions for preprocessing the data so that it is ready to be put into the model
   - modeling : neural network and functions for it; functions for applying the network with different architectures and hyperparameters
-  - evalutaion : functions for evaluating trained models (statistics, evtl. visializations)
+  - evaluation : functions for evaluating trained models (statistics, evtl. visializations)
   - slideshow : everything slide show related
-  - pipline? (probably not needed)
+  - data_exploration: exploration of mediapipe features
+  - process_videos: code for converting video to csv with mediapipe and threaded camera implementation
+  - performance_score: functionality for calculating the performance score in the exam
   
 &nbsp;
 
