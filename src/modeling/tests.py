@@ -7,7 +7,7 @@ from feature_scaling import StandardScaler
 from metaData import MetaData
 
 def test_neural_net():
-    my_net = FCNN(4, [3, 2, 2], [1, 1, 1], ['sigmoid']
+    my_net = FCNN(4, [3, 2, 2], [1, 1, 1], ['relu']
                     * 2 + ['softmax'], loss_func='categorical_cross_entropy', scaler=StandardScaler())
     my_net.init_weights()
     
@@ -29,11 +29,11 @@ def test_neural_net():
 
     
     my_net.clear_data_specific_parameters()
-    my_net.fit(X, Y_g, lr=0.01, epochs=800, batch_size=10)
+    my_net.fit(X, Y_g, lr=0.01, epochs=800, batch_size=10, optimizer='adam')
     my_net.clear_data_specific_parameters()
     
-    my_net.calc_stats(X, Y_g)
-    my_net.plot_stats().show()
+    # my_net.calc_stats(X, Y_g)
+    # my_net.plot_stats().show()
     
     grads_ok = check_gradient_of_neural_net(my_net, np.array([[0.1, 0.2, 0.9, 0.9]]), np.array([[0, 1]]))
     print("Grads_ok:", grads_ok)
@@ -75,9 +75,9 @@ def test_construct_MetaData_instance_from_dict():
 
 
 if __name__ == '__main__':
-    # test_neural_net()
+    test_neural_net()
     # test_save_run()
     # test_construct_MetaData_instance_from_dict()
     # test_FCNN_save_run()
-    test_FCNN_load_run()
+    # test_FCNN_load_run()
     print('done')

@@ -14,7 +14,6 @@ class MetaData():
             bias_list: List[int],
             train_acc: float,
             scaler,  # here an abstract scaler class or interface could be typehinted
-            val_acc: float,
             loss_function: str,
             activation_functions: List[str],
             author: str,
@@ -26,7 +25,13 @@ class MetaData():
             description: str = None,
             name: str = None,
             run_number: int = None,
-            date_iso: date = None):
+            date_iso: date = None,
+            loss_hist: List[int] = None,
+            acc_hist: List[int] = None,
+            val_acc_hist: List[int] = None,
+            f1_score_hist: List[int] = None,
+            f1_score_val_hist: List[int] = None,
+    ):
 
         self.name = name
         # will be determined when saving by counting the number of items in the run_group folder
@@ -41,14 +46,18 @@ class MetaData():
         self.architecture = architecture
         self.bias_list = bias_list
         self.train_acc = train_acc
-        self.scaler = scaler
-        self.val_acc = val_acc
         self.loss_function = loss_function
         self.activation_functions = activation_functions
         self.lr = lr
         self.epochs = epochs
         self.batch_size = batch_size
         self.num_samples = num_samples
+        self.scaler = scaler
+        self.loss_hist = loss_hist
+        self.acc_hist = acc_hist
+        self.val_acc_hist = val_acc_hist
+        self.f1_score_hist = f1_score_hist
+        self.f1_score_val_hist = f1_score_val_hist
 
     @classmethod
     def from_neural_net(
@@ -61,7 +70,7 @@ class MetaData():
             epochs: int,
             num_samples: int,
             description: str = None,
-            name: str = None
+            name: str = None,
     ) -> 'MetaData':
 
         return cls(
@@ -69,7 +78,6 @@ class MetaData():
             bias_list=neural_net.bias_list,
             train_acc=neural_net.acc_hist[-1],
             scaler=neural_net.scaler.to_dict(),
-            val_acc=neural_net.val_acc,
             loss_function=neural_net.loss_func_str,
             activation_functions=neural_net.activation_func_string_list,
             author=author,
@@ -79,7 +87,12 @@ class MetaData():
             epochs=epochs,
             num_samples=num_samples,
             description=description,
-            name=name
+            name=name,
+            loss_hist=neural_net.loss_hist,
+            acc_hist=neural_net.acc_hist,
+            val_acc_hist=neural_net.val_acc_hist,
+            f1_score_hist=neural_net.f1_score_hist,
+            f1_score_val_hist=neural_net.f1_score_val_hist,
         )
 
     @classmethod

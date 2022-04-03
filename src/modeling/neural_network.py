@@ -1,20 +1,25 @@
+import sys
+sys.path.append(r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src')
 import numpy as np
 from typing import List, Dict, Tuple, Callable
 import matplotlib.pyplot as plt
 from pathlib import Path
-from gradient_checking import check_gradient, check_gradient_of_neural_net
 from tqdm import tqdm
-from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax
-from activation_functions import softmax, sigmoid, sigmoid_d
-from feature_scaling import StandardScaler
-from save_and_load import save_run, load_run
+from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax, mse, d_mse
+from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
+from modeling.feature_scaling import StandardScaler
+from modeling.save_and_load import save_run, load_run
+from evaluation.metrics import f1_score, calc_confusion_matrix
+from modeling.helper import softmax2one_hot
+
 
 
 
 class FCNN:
 
     def __init__(self, input_size: int, layer_list: List[float], bias_list: List[int], activation_funcs: List, loss_func: str, 
-                       lr=None, scaler=None) -> None:
+                       lr=None, scaler=None, loss_hist=[], acc_hist=[], val_acc_hist=[], f1_score_hist=[], f1_score_val_hist=[],
+                       calc_metrics_func: Callable= None, evaluate_model_func: Callable=None) -> None:
         
         self.n = [([input_size] + layer_list)[i] + bias for i, bias in enumerate(bias_list + [0])]
         self.bias_list = bias_list
@@ -27,9 +32,6 @@ class FCNN:
         self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
         self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
         self.loss = None    # loss for specific data
-        self.loss_hist = [] # save losses through a training run
-        self.acc_hist = []  # save accuracy through a training run
-        self.val_acc = None     # validation accuracy computed by stats
         self.lr = lr        # learning rate
         self.activation_funcs = list()      # activation function of each layer
         self.d_activation_funcs = list()    # derivative of activation function of each layer
@@ -39,17 +41,48 @@ class FCNN:
         self.loss_func_str = loss_func
         # self.layer_output_funcs = []    # functions to calcualte the output of each layer
         self.scaler = scaler     # instance of a class with methods fit(), transform() like in notebook 5
+        self.weight_decay = None
+        self.lambd = None
+
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
+        self.loss_hist = loss_hist # save losses through a training run
+        self.acc_hist = acc_hist  # save accuracy through a training run
+        self.val_acc_hist = val_acc_hist    # validation accuracy computed by stats
+        self.f1_score_hist = f1_score_hist
+        self.f1_score_val_hist = f1_score_val_hist
+
+        self.num_samples = None
+        self.balancing_class_weight = None
+        self.non_balancing_class_weight = None
+
+        self.calc_metrics_func = calc_metrics_func
+        self.metrics_res = []
+
+        self.evaluate_model_func = evaluate_model_func
+
 
         self._activation_func_dict = {
             'sigmoid': sigmoid,
             'sigmoid_d': sigmoid_d,
             'softmax' : softmax,
+            'relu': relu,
+            'relu_d': relu_d,
+            'leaky_relu': leaky_relu,
+            'leaky_relu_d': leaky_relu_d,
         }
 
         self._loss_func_dict = {
             'cross_entropy': cross_entropy,
             'cross_entropy_d': d_cross_entropy,
             'categorical_cross_entropy': categorical_cross_entropy,
+            'mse': mse,
+            'd_mse': d_mse,
         }
 
         # check for inconsistencies
@@ -83,17 +116,39 @@ class FCNN:
         if not loss_func_str == 'categorical_cross_entropy':
             self.d_loss_func = self._loss_func_dict[loss_func_str + '_d']
     
+    def _init_adam_parameters(self):
+        if len(self.W) == 0:
+            raise RuntimeError('Weights are not initialized!')
+        
+        self.adam_iteration_counter = 0
+        self.adam_moment1 = [np.zeros_like(W) for W in self.W]
+        self.adam_moment2 = [np.zeros_like(W) for W in self.W]
+        self.adam_beta1 = 0.9
+        self.adam_beta2 = 0.999
+        self.adam_eps = 1e-8
+    
 
     def init_weights(self, W:np.array=None):
+        SIZE_RANDOM_INTERVALL = 0.1  # guessed based on 40 neurons, can be inproved
 
         if W:
             self.W = W
         else:
             np.random.seed(0)
             curr_layer_size = self.input_size
+            self.W = []
             for next_layer_size, bias in zip(self.layer_list, self.bias_list):
                 # have the weights distributed from -0.5 to 0.5
-                W = np.random.rand(next_layer_size, curr_layer_size + bias) - 0.5
+                bias_int = 0
+                if bias != 0:
+                    bias_int = 1
+                if self.activation_func_string_list[0] == 'relu' or self.activation_func_string_list[0] == 'leaky_relu':
+                    # if using relu actionvation function use "he"-initialisation of weights and the bias weights sould be zero
+                    W = np.random.normal(loc=0, scale=2/curr_layer_size, size=(next_layer_size, curr_layer_size))
+                    if bias_int:
+                        W = np.c_[np.zeros((next_layer_size, 1)), W]
+                else:
+                    W = np.random.rand(next_layer_size, curr_layer_size + bias_int)* SIZE_RANDOM_INTERVALL - 0.5
                 self.W.append(W)
                 curr_layer_size = next_layer_size
 
@@ -105,6 +160,39 @@ class FCNN:
         self.O = None
         self.Z = None       
         self.loss = None
+
+    
+
+    def clear_attributes(self):
+        # for grid search running
+
+        self.W = list()     # weights marixes
+        self.dW = list()    # derivative of the whole problem with respect to W structured like W
+        # outputs of each layer (not sure if this will be used)
+        self.O = None       # list of outputs of each layer, set in forward prop and used in backprop
+        self.Z = None       # matrix products of each layer without activation function set in forward prop used for backprop
+        self.loss = None    # loss for specific data
+    
+    
+        self.weight_decay = None
+        self.lambd = None
+
+        self.adam_moment1 = None
+        self.adam_moment2 = None
+        self.adam_iteration_counter = None
+        self.adam_beta1 = None
+        self.adam_beta2 = None
+        self.adam_eps = None
+
+        self.loss_hist = [] 
+        self.acc_hist = [] 
+        self.val_acc_hist = []    
+        self.f1_score_hist = []
+        self.f1_score_val_hist = []
+
+        self.num_samples = None
+        self.balancing_class_weight = None
+        self.non_balancing_class_weight = None
 
 
     def check_and_correct_shapes(self, X:np.array, Y_g:np.array):
@@ -124,8 +212,8 @@ class FCNN:
         """
         if not self.W:
             raise Exception('W needs to be initialized first')
-        if not self.input_size == X.shape[1]:
-            raise Exception('Input shape is not correct')
+        # if not self.input_size == X.shape[1]:
+        #     raise Exception('Input shape is not correct')
         for i, W in enumerate(self.W):
             if not (W.shape[1] == self.n[i] and W.shape[0] == self.layer_list[i]):
                 raise Exception(f'W[{i}] does not match the specified architechture')
@@ -145,7 +233,7 @@ class FCNN:
         for layer in range(len(self.W)):
             if layer == 0:
                 o = X.T     # (n_0 x d)
-                if self.bias_list[0] == 1:
+                if self.bias_list[0] != 0:
                     o = np.r_[np.ones(o.shape[1]).reshape(1, -1), o]    
                 o_list.append(o)
             
@@ -153,7 +241,7 @@ class FCNN:
             o = self.activation_funcs[layer](z)
 
             if not layer+1 == len(self.W):
-                if self.bias_list[layer+1] == 1:
+                if self.bias_list[layer+1] != 0:
                     o = np.r_[np.ones(o.shape[1]).reshape(1, -1), o]
             
             o_list.append(o)
@@ -169,8 +257,20 @@ class FCNN:
         self.O, self.Z = self.forward_it(X)
 
     def calc_loss(self, Y_g):
-        self.loss = self.loss_func(self.O[-1].T, Y_g)
+        if self.lambd is None:
+            self.loss = self.loss_func(self.O[-1].T, Y_g)
+        else:
+            sum = 0
+            for matrix in self.W:
+                sum = sum + np.sum(np.square(matrix))
+            self.loss = self.loss_func(self.O[-1].T, Y_g) + (self.lambd / (2 * np.shape(self.O[-1])[1]) * sum)
 
+
+    def apply_label_weighting(self, gradient_batch_tensor: np.array, Y_g: np.array, balanc_index: int = 0):
+        # gradient_batch_tensor shape: (n_(i+1) x n_i x b)
+        label_weights = np.ones((Y_g.shape[0])) * self.non_balancing_class_weight
+        label_weights[Y_g[:, balanc_index] == 1] = self.balancing_class_weight
+        return gradient_batch_tensor * label_weights[np.newaxis, np.newaxis, :]
 
     def backprop(self, Y_g:np.array):
         """
@@ -201,41 +301,63 @@ class FCNN:
 
                     # (b x n_(i+1))  (Z[i]: (n_(i+1) x b))
                     dW = dW * self.d_activation_funcs[i](self.Z[i].T)
-
-                self.dW.insert(0,
-                               np.sum(     # changed from mean
-                                   dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
-                                   axis=2))  # (n_(i+1) x n_i x b)
+                
             else:
-                if self.bias_list[i+1]:
+                if self.bias_list[i+1] != 0:
                     # removing the first column of the weight matrix is due to bias
                     dW = dW @ self.W[i+1][:, 1:] * self.d_activation_funcs[i](self.Z[i].T)
                 else:
                     # (b x n_(i+1))  (Z[i]: (n_(i+1) x b))
                     dW = dW @ self.W[i+1] * self.d_activation_funcs[i](self.Z[i].T)
 
-                # performing the last muliplication with the O values and summing (was averaging in a earlier verison) over the gradients 
-                # in the batch
-                self.dW.insert(0,
-                               np.sum(     # changed from mean
-                                   dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :],
-                                   axis=2))
+
+            gradient_batch_tensor = dW.T[:, np.newaxis, :] * self.O[i][np.newaxis, :, :]    # (n_(i+1) x n_i x b)
+            if self.gradient_label_weighting_bool: gradient_batch_tensor = self.apply_label_weighting(gradient_batch_tensor, Y_g)  # (n_(i+1) x n_i x b)
+            self.dW.insert(0, np.mean(gradient_batch_tensor, axis=2))                       # (n_(i+1) x n_i)    
+            
 
 
-    def update_weights(self):
+    def update_weights(self, optimizer, batch_size):
+
         for i in range(len(self.W)):
-            self.W[i] = self.W[i] - self.lr * self.dW[i]
+            if optimizer == 'sgd':
+                if self.lambd == 0:
+                    self.W[i] = self.W[i] - self.lr * self.dW[i]
+                else:
+                    self.W[i] = self.W[i] - self.lr * (self.dW[i] + self.lambd / batch_size * self.W[i])
+
+            elif optimizer == 'adam':
+                # src: https://arxiv.org/pdf/1412.6980.pdf
+
+                self.adam_iteration_counter += 1
+
+                g = self.dW[i]
+
+                self.adam_moment1[i] = self.adam_beta1 * self.adam_moment1[i] + (1 - self.adam_beta1) * g
+                self.adam_moment2[i] = self.adam_beta2 * self.adam_moment2[i] + (1 - self.adam_beta2) * np.power(g, 2)
+
+                m_hat = np.divide(self.adam_moment1[i], 1 - np.power(self.adam_beta1, self.adam_iteration_counter))
+                v_hat = np.divide(self.adam_moment2[i], 1 - np.power(self.adam_beta2, self.adam_iteration_counter))
+
+                if self.weight_decay == 0:
+                    self.W[i] = self.W[i] - self.lr * np.divide(m_hat, np.sqrt(v_hat) + self.adam_eps)
+                else:
+                    # src: https://openreview.net/pdf?id=rk6qdGgCZ
+
+                    self.W[i] = self.W[i] - self.lr * (np.divide(m_hat, np.sqrt(v_hat) + self.adam_eps) + self.weight_decay * self.W[i])
+
+            else:
+                raise RuntimeError(f'Optimizer was not specified correctly: {optimizer}')
 
     
-    def train(self, X:np.array, Y_g:np.array, batch_size:int):
-        # TODO: I dont know if it is necessary to shuffle new in every epoch or if it can be done once for every epoch
+    def train(self, X:np.array, Y_g:np.array, batch_size:int, optimizer: str = 'adam'):
         shuffled_indices = np.random.choice(X.shape[0], X.shape[0], replace=False)
         remaining_indices = shuffled_indices.copy()
 
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
 
-        while len(remaining_indices > 0):
+        while len(remaining_indices):
 
             # get the indices for the next batch with batch_size or just the last few in the last batch
             end_batch_index = np.min([len(remaining_indices), batch_size])
@@ -246,81 +368,156 @@ class FCNN:
             self.forward_prop(X[batch_indices, :])
             # self.calc_loss(Y_g[batch_indices])
             self.backprop(Y_g[batch_indices])
-            self.update_weights()
+            self.update_weights(optimizer, end_batch_index)
 
-    def track_epoch(self, X:np.array, Y_g:np.array):
+    def track_epoch(self, X:np.array, Y_g:np.array, X_val: np.array = None, Y_g_val: np.array = None):
         # calc loss over whole data
         self.clear_data_specific_parameters()
         self.forward_prop(X)
         self.calc_loss(Y_g)
         self.loss_hist.append(self.loss)
-        acc = self.calc_stats(X, Y_g, Y=self.O[-1].T)
-        self.acc_hist.append(acc)
+        Y = self.O[-1].T
+        if not X_val is None: 
+            self.clear_data_specific_parameters()
+            self.forward_prop(X_val)
+            self.calc_loss(Y_g_val)
+            Y_val = self.O[-1].T
+            if not (self.loss_func_str == 'mse' and len(Y_g.shape) == 1):
+                acc, val_acc, f1_scores, f1_scores_val = self.calc_stats(Y, Y_g, Y_val, Y_g_val)
+
+                self.val_acc_hist.append(val_acc)
+                self.f1_score_val_hist.append(f1_scores_val)
+                self.acc_hist.append(acc)
+                self.f1_score_hist.append(f1_scores)
+        else:
+            if not (self.loss_func_str == 'mse' and len(Y_g.shape) == 1):
+                acc, f1_scores = self.calc_stats(Y, Y_g)
+
+                self.acc_hist.append(acc)
+                self.f1_score_hist.append(f1_scores)
 
 
-    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int):
+    def fit(self, X:np.array, Y_g:np.array, lr:float, epochs:int, batch_size:int, optimizer: str = 'adam', weight_decay:float = 0, lambd:float = 0,
+        X_val: np.array = None, Y_g_val: np.array = None, gradient_label_weighting: bool = False):
         Y_g = self.check_and_correct_shapes(X, Y_g)
         self.lr = lr
-        # scaling the data with the specified scaler instance
-        # TODO: does y_d need to be scaled here?
-        self.scaler.fit(X)
-        X = self.scaler.transform(X)
+
+        self.gradient_label_weighting_bool = gradient_label_weighting
+        if gradient_label_weighting: self.calc_gradient_label_weights(Y_g)
+
+        if optimizer == 'sgd':
+            if weight_decay != 0:
+                raise Exception(f'sgd and weight decay dont go together')
+            else:
+                self.lambd = lambd
+
+        if optimizer == 'adam':
+            if lambd != 0:
+                raise Exception(f'adam and L2 regularization dont go together')
+            else:
+                self._init_adam_parameters()
+                self.weight_decay = weight_decay
 
         for epoch in tqdm(range(epochs)):
-            self.train(X, Y_g, batch_size)
-            self.track_epoch(X, Y_g)
+            self.train(X, Y_g, batch_size, optimizer)
+            self.track_epoch(X, Y_g, X_val, Y_g_val)
     
 
-    def calc_stats(self, X:np.array, Y_g:np.array, Y:np.array=None, safe_val_acc:bool=False):
+    def calc_stats(self, Y:np.array, Y_g:np.array, Y_val:np.array = None, Y_g_val:np.array = None):
         """
-        for classification problems -> Y_g needs to binary
+        for multiclass classification problems -> Y_g needs to binary
         """
-        if Y is None:
-            self.forward_prop(X)
-            Y = self.O[-1].T
+        # if Y is None:
+        #     self.forward_prop(X)
+        #     Y = self.O[-1].T
+        if self.loss_func_str == 'mse':
+            raise RuntimeError('calc_stats is only for classification problems')
         if len(Y_g.shape) == 1:
             Y_g = Y_g.reshape(-1, 1)
+            raise RuntimeError('calc_stats only supports multiclass classification')
         if not Y_g.shape == Y.shape:
             raise Exception('Y_g and Y shapes do not match')
+
+        Y_one_hot = softmax2one_hot(Y)
+        acc = (Y_g == Y_one_hot).all(axis=1).sum() / Y.shape[0]
+        f1_scores = [None] * Y.shape[1]
+        conf_matrix = calc_confusion_matrix(Y_one_hot, Y_g)
+        for klasse in range(Y.shape[1]):
+            f1_scores[klasse] = f1_score(conf_matrix, klasse)
+
+        if not Y_val is None:
+            Y_val_one_hot = softmax2one_hot(Y_val)
+
+            val_acc = (Y_g_val == Y_val_one_hot).all(axis=1).sum() / Y_val.shape[0] 
+
+            f1_scores_val = [None] * Y.shape[1]
+            conf_matrix = calc_confusion_matrix(Y_val_one_hot, Y_g_val)
+            for klasse in range(Y.shape[1]):
+                f1_scores_val[klasse] = f1_score(conf_matrix, klasse)
+
+            return acc, val_acc, f1_scores, f1_scores_val
         
-        Y_bin = Y.round()
+        return acc, f1_scores
 
-        # Y (b, n)
-        # accuracy
-        acc = (Y_g == Y_bin).all(axis=1).sum() / Y.shape[0]
-        # TODO: implement precision, recall and F1 score - for those a binary classification is needed 
-        # or we calculate the states for one claas compared to the rest
 
-        if safe_val_acc: self.val_acc = acc
+    def calc_gradient_label_weights(self, y: np.array, balanc_index: int = 0):
+        """ calculates the weights for the weighting of the different gradients when combining them to one gradient, which is then used for updating
+        two classes are supported 
 
-        return acc
+        Args:
+            balanc_index (int, optional): index of the class which should be balanced. Defaults to 0.
 
-    def plot_stats(self):
-        fig, axes = plt.subplots(1, 2, figsize=(10, 6))
-        axes[0].plot(self.loss_hist)
-        axes[1].plot(self.acc_hist)
-        # fig.show()
-        return fig
+        Raises:
+            RuntimeError: _description_
+            RuntimeError: _description_
+        """
+        if self.loss_func_str == 'mse':
+            raise RuntimeError('calc_gradient_label_weights is only for classification problems')
+        if len(y.shape) == 1:
+            raise RuntimeError('calc_gradient_label_weights only supports multiclass classification')
+
+        self.num_samples = y.shape[0]
+        num_balancing_class_in_train = (y[:, balanc_index] == 1).sum() # hier wird vorrausgestzt dass das erste label in one hot das idle label ist
+        num_non_balancing_class_in_train = self.num_samples - num_balancing_class_in_train
+        self.balancing_class_weight = self.num_samples / ( 2 * num_balancing_class_in_train)
+        self.non_balancing_class_weight = self.num_samples / ( 2 * num_non_balancing_class_in_train)
+
+
+
+    def calc_metrics(self, X: np.array, y_g: np.array):
+        """here the self specified calc_metrics function is called and results are saved in metrics_res list"""
+        self.forward_prop(X)
+        y = self.O[-1].T
+        if not self.calc_metrics_func is None:
+            self.metrics_res.append(self.calc_metrics_func(y, y_g))
+        else:
+            raise RuntimeError('No calc_metrics_func specified')
+        
+
+    def evaluate_model(self, X_train, y_train, X_val, y_val, save_plot_path:Path = None):
+        if not self.evaluate_model_func is None:
+            self.evaluate_model_func(self, X_train, y_train, X_val, y_val, save_plot_path)
+        else:
+            raise RuntimeError('No evalute_model_func specified')
     
+
     def save_run(self, save_runs_folder_path:Path, run_group_name:str, author:str, 
                  data_file_name:str, lr:float, batch_size:int, epochs:int, num_samples:int, 
                  description:str=None, name:str=None):
-        save_run(save_runs_folder_path, run_group_name, self, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
-    
+        save_folder_path = save_run(save_runs_folder_path, run_group_name, self, author, data_file_name, lr, batch_size, epochs, num_samples, description, name)
+        return save_folder_path
+
+
     @classmethod
     def load_run(cls, from_folder_path:Path) -> 'FCNN':
         # load an entire run with weights and all the meta data
         W, meta_data = load_run(from_folder_path)
         new_net = cls(meta_data.architecture[0], meta_data.architecture[1:], meta_data.bias_list, 
             meta_data.activation_functions, meta_data.loss_function, meta_data.lr, 
-            StandardScaler.from_dict(meta_data.scaler))
+            StandardScaler.from_dict(meta_data.scaler), meta_data.loss_hist, meta_data.acc_hist, 
+            meta_data.val_acc_hist, meta_data.f1_score_hist, meta_data.f1_score_val_hist)
         new_net.W = W
         print(f'Loaded run with epochs {meta_data.epochs}, batch_size {meta_data.batch_size}, num_samples {meta_data.num_samples}')
         return new_net
     
-
-    def load_weights(self, from_folder_path:Path):
-        # load all the weights without the meta data
-        W, meta_data = load_run(from_folder_path)
-        self.W = W
 
