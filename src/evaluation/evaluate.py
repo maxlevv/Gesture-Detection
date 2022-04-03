@@ -154,6 +154,13 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
     return fig, axs
 
 
+def confusion_matrix_wrapper(h_test, y_test):
+    fig, ax = plt.subplots(figsize=(20, 10))
+    generate_confusion_plot(
+        h_test, y_test, ax=ax, title='confusion_matrix_test')
+    fig.savefig('test_confusion')
+
+
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     """Smooth (and optionally differentiate) data with a Savitzky-Golay filter.     
     The Savitzky-Golay filter removes high frequency noise from data.     
@@ -309,6 +316,13 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
     fig.savefig(run_folder_paths[0] / 'overview_plot.png')
 
 
+def test_eval(X_test, y_test):
+    neural_net = FCNN.load_run(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_0_110-30-30-15-4'))
+    neural_net.forward_prop(X_test)
+    h_test = neural_net.O[-1].T
+    confusion_matrix_wrapper(h_test, y_test)
+
+
 def evaluate_runs(runs_folder_path: Path):
     # train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
     # val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
@@ -324,12 +338,13 @@ def evaluate_runs(runs_folder_path: Path):
     # X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=False)
     # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
 
-    X_train, y_train, scaler, pca = generate_pca_dataset(
-        train_folder_path, select_mandatory_label=True, keep_percentage=99)
-    X_val, y_val = generate_pca_dataset(
-        val_folder_path, scaler, select_mandatory_label=True, pca=pca)
+    # X_train, y_train, scaler, pca = generate_pca_dataset(
+    #     train_folder_path, select_mandatory_label=True, keep_percentage=99)
+    # X_val, y_val = generate_pca_dataset(
+    #     val_folder_path, scaler, select_mandatory_label=True, pca=pca)
 
     pca.save(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
+
 
     # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
     #     author='Jonas', description='window10_all, ohne Nina, second big run')
@@ -350,9 +365,22 @@ def evaluate_runs(runs_folder_path: Path):
 
 
 if __name__ == '__main__':
-    evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
+    # C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second\leaky_relu,ep=80,bs=256,lr=0.001155,wd=0.004965
+    # C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second\sigmoid,ep=80,bs=256,lr=0.001171,wd=0\2022-03-28_0_64-40-40-30-20-10-11
+    # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
     # generate_mean_f1_overview_plot(
     #     run_folder_paths=[
-    #         Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca')],
-    #     preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
+    #         Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\activation_func_plot')],
+    #     preproc_params_list=[{'window_size': 6, 'pattern': 'every'}]
     # )
+
+
+    train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
+    val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
+    test_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\test')
+
+    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=True)
+    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
+    X_test, y_test = generate_dataset(test_folder_path, scaler, select_mandatory_label=True)
+
+    test_eval(X_test, y_test)

@@ -38,9 +38,9 @@ timestamp,events
 1440,idle
 1480,idle
 1520,idle
-1560,rotate
+1560,idle
 1600,idle
-1640,idle
+1640,rotate
 1680,idle
 1720,idle
 1760,idle
@@ -147,8 +147,8 @@ timestamp,events
 5800,idle
 5840,idle
 5880,idle
-5920,rotate
-5960,idle
+5920,idle
+5960,rotate
 6000,idle
 6040,idle
 6080,idle
@@ -363,8 +363,8 @@ timestamp,events
 14440,idle
 14480,idle
 14520,idle
-14560,rotate
-14600,idle
+14560,idle
+14600,rotate
 14640,idle
 14680,idle
 14720,idle
@@ -528,8 +528,8 @@ timestamp,events
 21040,idle
 21080,idle
 21120,idle
-21160,idle
-21200,rotate
+21160,rotate
+21200,idle
 21240,idle
 21280,idle
 21320,idle

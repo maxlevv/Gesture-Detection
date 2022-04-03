@@ -14,22 +14,22 @@ from preprocessing.preprocessing_functions import Preprocessing_parameters, medi
 
 FLIP_BOOL = True
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument(
-#     "--input_csv", help="CSV file containing the video transcription from OpenPose", required=True)
-# parser.add_argument("--output_csv_name",
-#                     help="output CSV file containing the events", default="emitted_events.csv")
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--input_csv", help="CSV file containing the video transcription from OpenPose", required=True)
+parser.add_argument("--output_csv_name",
+                    help="output CSV file containing the events", default="emitted_events.csv")
 
-# args = parser.parse_known_args()[0]
+args = parser.parse_known_args()[0]
 
-# input_path = args.input_csv
+input_path = args.input_csv
 
-# output_directory, input_csv_filename = os.path.split(args.input_csv)
-# output_path = "%s/%s" % (output_directory, args.output_csv_name)
+output_directory, input_csv_filename = os.path.split(args.input_csv)
+output_path = "%s/%s" % (output_directory, args.output_csv_name)
 
 
-input_path = Path(r'..\..\data\raw_frames\tamara_val_original_to_csv\swipe_right_2022-04-03_14-55.csv')
-output_path = input_path.parent / "emitted_events_swipe_right.csv"
+# input_path = Path(r'..\..\data\raw_frames\tamara_val_original_to_csv\swipe_right_2022-04-03_14-55.csv')
+# output_path = input_path.parent / "emitted_events_swipe_right.csv"
 # output_path = Path(
 #     r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src\evaluation') / "emitted_events.csv"
 
@@ -102,7 +102,6 @@ if FLIP_BOOL:
 else:
     flipped_frames = frames
 
-flipped_frames.to_csv('flipped.csv')
 
 compute_events(flipped_frames)
 
