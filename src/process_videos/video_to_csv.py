@@ -67,10 +67,10 @@ def testing():
 
 def converting():
     video_folder_path = Path(
-        r'C:\Users\hornh\Documents\ml_projekt_videos\val_vids_tamara')
+        r'C:\Users\Jochen\Jonas\ML\val_video_tamara')
     raw_frames_folder_path = Path(
-        r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\raw_frames\tamara_val')
-    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=False)
+        r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\raw_frames\tamara_val_flipped')
+    video_to_csv(video_folder_path, raw_frames_folder_path, flip_image=True)  # vorsicht flip image true
 
 
 if __name__ == '__main__':

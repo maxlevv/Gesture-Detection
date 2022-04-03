@@ -42,7 +42,7 @@ class PredictionHandler():
     def make_prediction_for_csv(self, resampled_df: pd.DataFrame):
         frames_preproc, _ = create_X(resampled_df, self.preproc_params)
         frames_preproc = self.network.scaler.transform(frames_preproc)
-        frames_preproc = self.pca.transform(X=frames_preproc)
+        # frames_preproc = self.pca.transform(X=frames_preproc)
         self.network.forward_prop(frames_preproc)
         self.prediction = softmax2one_hot(self.network.O[-1].T)
 
@@ -176,12 +176,13 @@ def create_PredictionHandler_for_test():
         num_shifts=1, num_timesteps=10,
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-30-30-4')
+    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-30-30-4')
+    # network_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca_best\relu,ep=4000,bs=512,lr=0.0015,wd=0\2022-04-02_0_46-30-30-15-4')
 
     network = FCNN.load_run(network_path)
 
-    pca = PCA.load(r'..\..\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
+    # pca = PCA.load(r'..\..\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
 
-    pred_handler = PredictionHandler(network, preproc_params, test_mode=True, pca=pca)
+    pred_handler = PredictionHandler(network, preproc_params, test_mode=True)
 
     return pred_handler
