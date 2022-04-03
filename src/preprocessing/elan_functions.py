@@ -70,15 +70,16 @@ def do():
     elan_annotation_folder_path = Path(
         r'C:\Users\hornh\Documents\ml_projekt_videos\at_home\3rd_session\txt_files')
     elan_annotation_folder_path = Path(
-        r'C:\Users\hornh\Documents\ml_projekt_videos\val_vids_tamara')
+        r'C:\Users\Jochen\Jonas\ML\val_video_tamara')
+        
     raw_frames_folder_path = Path(
-        r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\raw_frames\tamara_val')
+        r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\raw_frames\tamara_val_flipped')
 
     labeled_frames_folder_path = Path(r'..\..\data\labeled_frames')
     labeled_frames_folder_path = Path(
         r'..\..\data\labeled_frames\third_session')
     labeled_frames_folder_path = Path(
-        r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\labeled_frames\tamara_val')
+        r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\labeled_frames\tamara_val_flipped')
 
     add_elan_labels_to_frame(elan_annotation_folder_path,
                              raw_frames_folder_path, labeled_frames_folder_path)

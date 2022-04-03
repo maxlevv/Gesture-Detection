@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import json
 from modeling.feature_scaling import StandardScaler
 import matplotlib.pyplot as plt
 from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
@@ -24,6 +25,13 @@ def get_df(preproc_folder_path: Path):
 
 
 class PCA():
+
+    def __init__(self, keep_percentag= None, eig_vectors_sorted= None, eig_values_sorted= None, percentage= None, index=None):
+        self.keep_percentage = keep_percentag
+        self.eig_vectors_sorted = eig_vectors_sorted
+        self.eig_values_sorted = eig_values_sorted
+        self.percentage = percentage
+        self.index = index
 
     def fit(self, df: pd.DataFrame, keep_percentage: float = 100):
         self.columns = df.columns.values
@@ -54,14 +62,37 @@ class PCA():
         else:
             raise Exception('percentage cannot be more than 100')
 
-    def transform(self, df: pd.DataFrame):
-        X = df.to_numpy()
-        X = X[:, 1:]
+    def transform(self, df: pd.DataFrame = None, X: np.array = None):
+        if X is None: 
+            X = df.to_numpy()
+            X = X[:, 1:]
         if self.keep_percentage == 100:
             return X @ self.eig_vectors_sorted
         else:
             feature_vector = self.eig_vectors_sorted[:, :self.index+1]
             return X @ feature_vector
+    
+    def save(self, save_path: Path):
+        save_data_dict = {
+            'keep_percentage': self.keep_percentage,
+            'eig_vectors_sorted': self.eig_vectors_sorted.tolist(),
+            'eig_values_sorted': self.eig_values_sorted.tolist(),
+            'percentage': self.percentage.tolist(),
+            'index': int(self.index)
+            }
+        with open(save_path, 'w') as meta_json_file:
+            json.dump(save_data_dict, meta_json_file)
+
+    @classmethod
+    def load(cls, save_path:Path):
+        with open(save_path, 'r') as meta_json_file:
+            meta_data_dict = json.load(meta_json_file)
+            new_pca = cls(keep_percentag= meta_data_dict['keep_percentage'], 
+                          eig_vectors_sorted= np.array(meta_data_dict['eig_vectors_sorted']),
+                          eig_values_sorted= np.array(meta_data_dict['eig_values_sorted']),
+                          percentage = np.array(meta_data_dict['percentage']),
+                          index = meta_data_dict['index'])
+            return new_pca
 
     def scree_plot(self):
         #labels = ['PC' + str(x) for x in range(1, len(self.eig_values_sorted) + 1)]
@@ -133,7 +164,7 @@ def generate_pca_dataset(preproc_folder_path: Path, scaler: StandardScaler = Non
 if __name__ == '__main__':
 
     folder_path_train = Path(
-        r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train')
+        r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\train')
     folder_path_val = Path(
         r'C:\Users\Max\PycharmProjects\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\validation')
     df_train = get_df(folder_path_train)
@@ -147,9 +178,16 @@ if __name__ == '__main__':
     pca = PCA()
     pca.fit(df_train, keep_percentage=99)
 
-    pca.print_contributing_parameters(component=2)
+    pca.save(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\archive\pca_save.json'))
+
+    new_pca = PCA.load(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\archive\pca_save.json')
+
+
+    
+
+    # pca.print_contributing_parameters(component=2)
 
     #X_train_pca = pca.transform(df_train)
     #X_val_pca = pca.transform(df_val)
 
-    pca.scree_plot()
+    new_pca.scree_plot()

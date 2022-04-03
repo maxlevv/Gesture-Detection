@@ -324,6 +324,8 @@ def evaluate_runs(runs_folder_path: Path):
     X_val, y_val = generate_pca_dataset(
         val_folder_path, scaler, select_mandatory_label=True, pca=pca)
 
+    pca.save(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
+
     # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
     #     author='Jonas', description='window10_all, ohne Nina, second big run')
 
@@ -333,19 +335,19 @@ def evaluate_runs(runs_folder_path: Path):
     # X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=False, keep_percentage=99)
     # X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=False, pca=pca)
 
-    for meta_json_path in runs_folder_path.glob(r'**/*_meta.json'):
-        neural_net = FCNN.load_run(meta_json_path.parent)
-        save_path = meta_json_path.parent / \
-            (str(meta_json_path.parent.parent.name) + "_eval_plot.png")
-        generate_evaluation_plot(
-            neural_net, X_train, y_train, X_val, y_val, save_plot_path=save_path)
-        print('saving', save_path)
+    # for meta_json_path in runs_folder_path.glob(r'**/*_meta.json'):
+    #     neural_net = FCNN.load_run(meta_json_path.parent)
+    #     save_path = meta_json_path.parent / \
+    #         (str(meta_json_path.parent.parent.name) + "_eval_plot.png")
+    #     generate_evaluation_plot(
+    #         neural_net, X_train, y_train, X_val, y_val, save_plot_path=save_path)
+    #     print('saving', save_path)
 
 
 if __name__ == '__main__':
-    # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
-    generate_mean_f1_overview_plot(
-        run_folder_paths=[
-            Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca')],
-        preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
-    )
+    evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
+    # generate_mean_f1_overview_plot(
+    #     run_folder_paths=[
+    #         Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca')],
+    #     preproc_params_list=[{'window_size': 10, 'pattern': 'every'}]
+    # )

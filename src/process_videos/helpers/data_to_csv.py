@@ -6,7 +6,7 @@ class CSVDataWriter:
     def __init__(self):
         self.frame_list = []
         self.timestamps = []
-        self.column_names = self.load_keypoint_mapping_from_file(r"C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src\process_videos\keypoint_mapping.yml")
+        self.column_names = self.load_keypoint_mapping_from_file(r"C:\Users\Jochen\Jonas\ML\ml_dev_repo\src\process_videos\keypoint_mapping.yml")
 
     def read_data(self, data, timestamp):
         frame = []
