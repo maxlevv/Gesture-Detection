@@ -20,18 +20,13 @@ from slideshow.prediction_handler import create_PredictionHandler_for_test
 
 input_path = Path(
     r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\final_project_clone\final-project-getting-started\demo_data\demo_video_frames_rotate.csv')
-input_path = Path(r'data\labeled_frames\tamara_val\rotate_labeled.csv')
-output_path = input_path.parent / "emitted_events.csv"
-output_path = Path(
-    r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src\evaluation') / "emitted_events.csv"
+input_path = Path(r'..\..\data\labeled_frames\tamara_val\swipe_left_labeled.csv')
+output_path = input_path.parent / "emitted_events_swipe_left.csv"
+# output_path = Path(
+#     r'C:\Users\hornh\OneDrive\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src\evaluation') / "emitted_events.csv"
 
 frames = pd.read_csv(input_path, sep=' *,', engine='python')
 frames.timestamp = frames.timestamp.astype(int)
-# frames = frames.reindex()
-
-
-# ================================= your application =============================
-# you should import and call your own application here
 
 
 def compute_events(frames: pd.DataFrame):
@@ -39,8 +34,6 @@ def compute_events(frames: pd.DataFrame):
     org_frames = frames.copy()
     frames = frames.set_index('timestamp')
     df = LiveDfGenerator.resample(frames)
-    # df = df[-pred_handler.preproc_params.num_timesteps:]
-    # df = LiveDfGenerator.reset_index(df)
 
     pred_handler.make_prediction_for_csv(df)
     pred_handler.initialize_events(df)
