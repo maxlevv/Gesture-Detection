@@ -1,5 +1,6 @@
 import sys
-sys.path.append(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\src')
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 from platform import architecture
 import numpy as np
 import pandas as pd

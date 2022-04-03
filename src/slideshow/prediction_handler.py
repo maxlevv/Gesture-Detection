@@ -1,13 +1,16 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import pandas as pd
 import numpy as np
 import time
 from pathlib import Path
-from modeling.neural_network import FCNN
+from neural_network import FCNN
 from preprocessing.pca import PCA
 from preprocessing.preprocessing_functions import Preprocessing_parameters
 from preprocessing.preprocessing_functions import create_X
 from preprocessing.preprocessing_functions import LabelsOptional
-from modeling.helper import softmax2one_hot
+from helper import softmax2one_hot
 
 
 class PredictionHandler():

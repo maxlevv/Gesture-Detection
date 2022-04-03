@@ -1,4 +1,9 @@
 from __future__ import annotations
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
+
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,8 +15,8 @@ from modeling.grid_search import generate_dataset
 from preprocessing.pca import generate_pca_dataset
 import json
 from math import factorial
+from neural_network import FCNN
 
-from modeling.neural_network import FCNN
 
 
 def generate_acc_plot(neural_net: FCNN, ax: plt.axes):

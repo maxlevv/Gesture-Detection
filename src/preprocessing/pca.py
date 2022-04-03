@@ -1,8 +1,11 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import json
-from modeling.feature_scaling import StandardScaler
+from feature_scaling import StandardScaler
 import matplotlib.pyplot as plt
 from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
 

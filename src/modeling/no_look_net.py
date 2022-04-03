@@ -1,3 +1,6 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import os
 from pathlib import Path
 
@@ -8,8 +11,8 @@ import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 
 from evaluation.metrics import f1_score
-from modeling.feature_scaling import StandardScaler
-from modeling.neural_network import FCNN
+from feature_scaling import StandardScaler
+from neural_network import FCNN
 from preprocessing.preprocessing_functions import scale_to_body_size_and_dist_to_camera
 
 

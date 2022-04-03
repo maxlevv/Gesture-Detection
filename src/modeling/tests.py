@@ -1,3 +1,6 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import numpy as np
 from gradient_checking import check_gradient_of_neural_net
 from pathlib import Path

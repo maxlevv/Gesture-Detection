@@ -49,7 +49,7 @@ class ThreadedCamera(object):
 
                     self.status, frame = self.capture.read()
 
-                    # only read every third frame
+                    # only read every xth frame
                     counter += 1
                     if counter < 2:
                         continue
