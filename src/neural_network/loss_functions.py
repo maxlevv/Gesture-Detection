@@ -1,5 +1,5 @@
 import numpy as np
-from modeling.activation_functions import softmax
+from activation_functions import softmax
 
 
 def cross_entropy(h: np.array, y: np.array):

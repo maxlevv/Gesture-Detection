@@ -4,8 +4,8 @@ import json
 import numpy as np
 from typing import List, Tuple
 from pathlib import Path
-from modeling.feature_scaling import StandardScaler
-from modeling.metaData import MetaData
+from feature_scaling import StandardScaler
+from metaData import MetaData
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from neural_network import FCNN

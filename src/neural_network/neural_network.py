@@ -5,12 +5,12 @@ from typing import List, Dict, Tuple, Callable
 import matplotlib.pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
-from modeling.loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax, mse, d_mse
-from modeling.activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
-from modeling.feature_scaling import StandardScaler
-from modeling.save_and_load import save_run, load_run
+from loss_functions import cross_entropy, d_cross_entropy, categorical_cross_entropy, d_categorical_cross_entropy_with_softmax, mse, d_mse
+from activation_functions import softmax, sigmoid, sigmoid_d, relu, relu_d, leaky_relu, leaky_relu_d
+from feature_scaling import StandardScaler
+from save_and_load import save_run, load_run
 from evaluation.metrics import f1_score, calc_confusion_matrix
-from modeling.helper import softmax2one_hot
+from helper import softmax2one_hot
 
 
 
