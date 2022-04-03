@@ -19,7 +19,7 @@ Respository for the final project of the Machine Learning course
 1. **Test mode**
 
     In order to run the test mode for grading the performance requirements, switch to the directory `src/performance_score/` and run the script `gesture_detection.py` with 
-    `python gesture_detection.py --Input_csv path_to_test_file`, where path_to_test_file is the path to the csv file for testing.
+    `python gesture_detection.py --Input_csv path_to_test_file`, where `path_to_test_file` is the path to the csv file for testing.
 
 2. **Prediction mode**
 
