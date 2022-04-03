@@ -51,5 +51,11 @@ Respository for the final project of the Machine Learning course
   
 &nbsp;
 
-- archive: code not needed any more, but might be somewhat interesting
+- archive: code not needed any more, but might be somewhat interesting  
 
+
+## Runs and Plots used for the Presentation
+
+- The data that we used to generate the plots in the presentation can be found in saved_runs/Visualized_Runs
+- For this we used the script src/evaluation/evaluate.py 
+- To visualize the MediaPipe data and our preprocessed  data we used the notebook src/data_exploration/feature_visualization.ipynb
