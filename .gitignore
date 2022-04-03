@@ -1,3 +1,5 @@
 src/modeling/__pycache__
 notes.md
-src\modeling\__pycache__
+src/preprocessing/__pycache__
+src/slideshow/__pycache__
+src/evaluation/__pycache__
