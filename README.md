@@ -57,5 +57,5 @@ Respository for the final project of the Machine Learning course
 ## Runs and Plots used for the Presentation
 
 - The data that we used to generate the plots in the presentation can be found in saved_runs/Visualized_Runs
-- For this we used the script src/evaluation/evaluate.py 
-- To visualize the MediaPipe data and our preprocessed  data we used the notebook src/data_exploration/feature_visualization.ipynb
+- To create the plots we used the functions *generate_mean_f1_overview_plot*, *evaluate_runs* and *test_eval* from the file src/evaluation/evaluate.py 
+- To visualize the MediaPipe data and our preprocessed data we used the notebook src/data_exploration/feature_visualization.ipynb 
