@@ -158,9 +158,9 @@ def evaluate_models(path_to_nets_to_evaluate, df_val, Y_g_val):
         f1 = f1_score(confusion_matrix, 0)
         print(f1)
 
-        with open(dir / f'accuracy:{round(acc, 3)}.txt', 'w') as _:
+        with open(dir / f'accuracy {round(acc, 3)}.txt', 'w') as _:
             pass
-        with open(dir / f'f1:{round(f1, 3)}.txt', 'w') as _:
+        with open(dir / f'f1 {round(f1, 3)}.txt', 'w') as _:
             pass
 
 
