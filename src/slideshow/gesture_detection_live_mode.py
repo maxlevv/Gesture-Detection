@@ -1,3 +1,8 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
+sys.path.append('../..')
+
 from sanic import Sanic
 from sanic.response import json
 import os
@@ -16,7 +21,7 @@ from src.process_videos.helpers import data_to_csv as dtc
 import time
 import threading
 
-from modeling.neural_network import FCNN
+from neural_network import FCNN
 from preprocessing.live_preprocessing import LiveDfGenerator
 from prediction_handler import create_PredictionHandler_for_live, PredictionHandler
 from process_videos.threaded_camera import ThreadedCamera

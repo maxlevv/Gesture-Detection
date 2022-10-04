@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import os
 from pathlib import Path
 
@@ -7,27 +11,41 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 
-from evaluation.metrics import f1_score
-from modeling.feature_scaling import StandardScaler
-from modeling.neural_network import FCNN
+from neural_net_pack.nn_metrics import f1_score
+from neural_net_pack.feature_scaling import StandardScaler
+from neural_net_pack.neural_network import FCNN
 from preprocessing.preprocessing_functions import scale_to_body_size_and_dist_to_camera
+
+# Network detecting if the user is looking into the camera or not, so that the slideshow is only controlled if the user is not looking.
+
+# encodings for the output of the network (network predicts 1 or 0, but conversion to human-readable labels desirable)
+label_encodings = {
+    'no_look': 1,
+    'idle': 0
+}
+inverse_label_encodings = {
+    1: 'no_look',
+    0: 'idle'
+}
 
 
 def preprocess(df):
-    preprocessed: pd.DataFrame = df.loc[:, 'left_eye_outer_x'] - df.loc[:, 'right_eye_outer_x']
+    """
+    This method computes the distance between the outer parts of the left and right eye, and scales it to the body size
+    """
+    # further idea: four features (ear-ear, eye-eye and ear-eye-distance)
     # preprocessed = pd.DataFrame()
     # preprocessed['ear_dist'] = df.loc[:, 'left_ear_x'] - df.loc[:, 'right_ear_x']
     # preprocessed['eye distance'] = df.loc[:, 'left_eye_outer_x'] - df.loc[:, 'right_eye_outer_x']
     # preprocessed['eye ear distance left'] = df.loc[:, 'left_ear_x'] - df.loc[:, 'left_eye_outer_x']
     # preprocessed['eye ear distance right'] = df.loc[:, 'right_ear_x'] - df.loc[:, 'right_eye_outer_x']
-    # print(preprocessed)
-    # print('df type', type(df))
+
+    preprocessed: pd.DataFrame = df.loc[:, 'left_eye_outer_x'] - df.loc[:, 'right_eye_outer_x']
     eye_distance = preprocessed.to_numpy()[:, np.newaxis]
     return scale_to_body_size_and_dist_to_camera(eye_distance, df)
 
 
 def train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val):
-    # my_net = FCNN(0, [1], [1], ['softmax'], loss_func='categorical_cross_entropy',
     my_net = FCNN(1, [1], [1], ['sigmoid'], loss_func='cross_entropy',
                   scaler=StandardScaler())
     my_net.scaler.fit(X)
@@ -44,6 +62,9 @@ def train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val):
 
 
 def predict(df, net):
+    """
+    Preprocess, scale and forward-propagate the specified data with the specified net.
+    """
     X = preprocess(df)
     X_scaled = net.scaler.transform(X)
     net.forward_prop(X_scaled)
@@ -105,43 +126,24 @@ def predict_labels(df, net):
     return labels
 
 
-label_encodings = {
-    'no_look': 1,
-    'idle': 0
-}
-inverse_label_encodings = {
-    1: 'no_look',
-    0: 'idle'
-}
-
-if __name__ =='__main__':
-    df = pd.read_csv(
-        '../../data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
-    X = preprocess(df)
-    Y_g = df.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
-
-    df_val = pd.read_csv(
-        '../../data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
-    X_val = preprocess(df_val)
-    Y_g_val = df_val.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
-
-    lr = 0.03
-    batch_size = 64
-    epochs = 100
+def train_and_store_net(lr, batch_size, epochs, df, X, Y_g, df_val, X_val, Y_g_val):
+    # path for saving trained net
     save_path = Path('../../saved_runs/no_look')
 
-    # net = train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val)
-    #
-    # save_folder_path = net.save_run(save_path,
-    #                                 'first_run_nina_no_look', author='Nina', data_file_name='test',
-    #                                 lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X.shape[0],
-    #                                 description="test")
+    # train and save
+    net = train(X, Y_g, lr, epochs, batch_size, X_val, Y_g_val)
+    save_folder_path = net.save_run(save_path,
+                                    'nina_run_no_look', author='Nina', data_file_name='test',
+                                    lr=lr, batch_size=batch_size, epochs=epochs, num_samples=X.shape[0],
+                                    description="test")
 
 
-
-    no_look_path = save_path / 'first_run_nina_no_look'
-    for dir in next(os.walk(no_look_path))[1]:
-        dir = Path(no_look_path, dir)
+def evaluate_models(path_to_nets_to_evaluate, df_val, Y_g_val):
+    """
+    Compute statistics and plot confusion matrix for the trained networks
+    """
+    for dir in next(os.walk(path_to_nets_to_evaluate))[1]:
+        dir = Path(path_to_nets_to_evaluate, dir)
 
         load_path = dir
         net = FCNN.load_run(load_path)
@@ -156,7 +158,29 @@ if __name__ =='__main__':
         f1 = f1_score(confusion_matrix, 0)
         print(f1)
 
-        with open(dir / f'accuracy: {acc}', 'w') as _:
+        with open(dir / f'accuracy {round(acc, 3)}.txt', 'w') as _:
             pass
-        with open(dir / f'f1: {f1}', 'w') as _:
+        with open(dir / f'f1 {round(f1, 3)}.txt', 'w') as _:
             pass
+
+
+if __name__ == '__main__':
+    # load data
+    df = pd.read_csv(
+        '../../data/labeled_frames/ready_to_train_look/train/03-18_jonas_look_train_labeled.csv')
+    X = preprocess(df)
+    Y_g = df.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
+
+    df_val = pd.read_csv(
+        '../../data/labeled_frames/ready_to_train_look/val/03-18_jonas_look_val_labeled.csv')
+    X_val = preprocess(df_val)
+    Y_g_val = df_val.loc[:, 'ground_truth'].map(label_encodings).to_numpy()[:, np.newaxis]
+
+    # hyperparameters for training
+    # lr = 0.1
+    # batch_size = 64
+    # epochs = 100
+    #
+    # train_and_store_net(lr, batch_size, epochs, df, X, Y_g, df_val, X_val, Y_g_val)
+
+    evaluate_models(Path('../../saved_runs/no_look/nina_run_no_look'), df_val, Y_g_val)

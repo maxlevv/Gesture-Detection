@@ -1,13 +1,16 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import pandas as pd
 import numpy as np
 import time
 from pathlib import Path
-from modeling.neural_network import FCNN
+from neural_network import FCNN
 from preprocessing.pca import PCA
 from preprocessing.preprocessing_functions import Preprocessing_parameters
 from preprocessing.preprocessing_functions import create_X
 from preprocessing.preprocessing_functions import LabelsOptional
-from modeling.helper import softmax2one_hot
+from helper import softmax2one_hot
 
 
 class PredictionHandler():
@@ -177,7 +180,9 @@ def create_PredictionHandler_for_test():
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-30-30-4')
-    # network_path = Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca_best\relu,ep=4000,bs=512,lr=0.0015,wd=0\2022-04-02_0_46-30-30-15-4')
+    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_1000epochs\relu,ep=1000,bs=512,lr=0.000875,wd=0\2022-04-01_2_110-30-30-15-4')
+    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_0_110-30-30-15-4')
+    
 
     network = FCNN.load_run(network_path)
 

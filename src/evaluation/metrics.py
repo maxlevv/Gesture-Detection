@@ -1,9 +1,13 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from preprocessing.preprocessing_functions import LabelsMandatory, LabelsOptional
-from modeling.helper import softmax2one_hot
+from helper import softmax2one_hot
+from nn_metrics import calc_confusion_matrix, f1_score, precision, recall
 
 
 def accuracy(h: np.array, y: np.array):

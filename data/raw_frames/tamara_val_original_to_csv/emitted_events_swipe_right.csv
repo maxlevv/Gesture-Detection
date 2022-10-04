@@ -39,8 +39,8 @@ timestamp,events
 1480,idle
 1520,idle
 1560,idle
-1600,swipe_right
-1640,idle
+1600,idle
+1640,swipe_right
 1680,idle
 1720,idle
 1760,idle
@@ -398,9 +398,9 @@ timestamp,events
 15840,idle
 15880,idle
 15920,idle
-15960,swipe_right
+15960,idle
 16000,idle
-16040,idle
+16040,swipe_right
 16080,idle
 16120,idle
 16160,idle
@@ -499,8 +499,8 @@ timestamp,events
 19880,idle
 19920,idle
 19960,idle
-20000,idle
-20040,swipe_right
+20000,swipe_right
+20040,idle
 20080,idle
 20120,idle
 20160,idle

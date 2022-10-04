@@ -1,11 +1,14 @@
+import sys
+sys.path.append('neural_net_pack')
+sys.path.append('../../neural_net_pack')
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from modeling.neural_network import FCNN
+from neural_network import FCNN
 #from preprocessing.preprocessing_functions import Labels
 from preprocessing.preprocessing_functions import LabelsMandatory
 from preprocessing.preprocessing_functions import LabelsOptional
-from modeling.feature_scaling import StandardScaler
+from feature_scaling import StandardScaler
 import matplotlib.pyplot as plt
 
 from process_videos.helpers.colors import bcolors
