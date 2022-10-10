@@ -23,7 +23,7 @@ def train_small_net(save_run_folder_path: Path, author: str, description: str):
     batch_size = 512
     lr = 0.000875
     weight_decay = 0
-    architecture = [110, 30, 30, 15, 4]
+    architecture = [30, 30, 15, 4]
 
     neural_net = FCNN(
         input_size=X_train.shape[1],
@@ -65,7 +65,7 @@ def train_large_net(save_run_folder_path: Path, author: str, description: str):
     batch_size = 512
     lr = 0.000875
     weight_decay = 0
-    architecture = [110, 40, 40, 30, 20, 11]
+    architecture = [40, 40, 30, 20, 11]
 
     neural_net = FCNN(
         input_size=X_train.shape[1],
@@ -96,3 +96,4 @@ def train_large_net(save_run_folder_path: Path, author: str, description: str):
 
 if __name__ == '__main__':
     train_small_net(Path(r'saved_runs\SS22\kleines_net_original'), author='Jonas', description='small net like last semester')
+    # train_large_net(Path(r'saved_runs\SS22\grosses_net_original'), author='Jonas', description='large net like last semester')
