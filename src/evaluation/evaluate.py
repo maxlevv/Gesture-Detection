@@ -1,7 +1,10 @@
 from __future__ import annotations
 import sys
+sys.path.append(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src')
+from evaluation.metrics import calc_metrics
 sys.path.append('neural_net_pack')
 sys.path.append('../../neural_net_pack')
+
 
 
 import numpy as np
@@ -20,14 +23,14 @@ from neural_network import FCNN
 
 
 def generate_acc_plot(neural_net: FCNN, ax: plt.axes):
-    ax.plot(neural_net.acc_hist, label='train_accuracy')
-    ax.plot(neural_net.val_acc_hist, label='val_accuracy')
-    ax.set_xlabel('epochs', fontsize=20)
-    ax.set_ylabel('acc', fontsize=20)
-    ax.set_title('accuracy', fontsize=20)
-    ax.legend(loc='lower right', fontsize=20)
+    ax.plot(neural_net.acc_hist, label='train')
+    ax.plot(neural_net.val_acc_hist, label='validation')
+    ax.set_xlabel('epochs', fontsize=30, labelpad=30)
+    ax.set_ylabel('accuracy', fontsize=30, labelpad=30)
+    ax.set_title('accuracy', fontsize=40, pad=35)
+    ax.legend(loc='lower right', fontsize=25)
 
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid()
 
     ax.set_facecolor('lavender')
@@ -35,12 +38,11 @@ def generate_acc_plot(neural_net: FCNN, ax: plt.axes):
 
 def generate_loss_plot(neural_net: FCNN, ax: plt.axes):
     ax.plot(neural_net.loss_hist, label='loss')
-    ax.set_xlabel('epochs', fontsize=20)
-    ax.set_ylabel('loss', fontsize=20)
-    ax.set_title('loss', fontsize=20)
-    ax.legend(loc='upper right', fontsize=20)
+    ax.set_xlabel('epochs', fontsize=30, labelpad=30)
+    ax.set_ylabel('loss', fontsize=30, labelpad=30)
+    ax.set_title('loss', fontsize=40, pad=35)
 
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid()
 
     ax.set_facecolor('lavender')
@@ -57,19 +59,21 @@ def generate_f1_score_plot(neural_net: FCNN, ax: plt.axes, mode: str, Labels_Man
         for label in Labels:
             ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > only_plot_larger_value],
                     f1_np[:, label.value][f1_np[:, label.value] > only_plot_larger_value], label=str(label.name))
-        ax.set_title('train_f1_score')
+        ax.set_title('f1 score on train data', fontsize=40, pad=35)
+        ax.set_ylim([0.6, 1.02])
     elif mode == 'val':
         f1_np = np.array(neural_net.f1_score_val_hist)
         for label in Labels:
             ax.plot(np.arange(len(f1_np[:, label.value]))[f1_np[:, label.value] > only_plot_larger_value],
                     f1_np[:, label.value][f1_np[:, label.value] > only_plot_larger_value], label=str(label.name))
-        ax.set_title('val_f1_score', fontsize=20)
+        ax.set_title('f1 score on validation data', fontsize=40, pad=35)
+        ax.set_ylim([0.6, 1.02])
 
-    ax.set_xlabel('epochs', fontsize=20)
-    ax.set_ylabel('f1_score', fontsize=20)
-    ax.legend(loc='lower right', fontsize=15)
+    ax.set_xlabel('epochs', fontsize=30, labelpad=30)
+    ax.set_ylabel('f1_score', fontsize=30, labelpad=30)
+    ax.legend(loc='lower right', fontsize=25)
 
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid()
 
     ax.set_facecolor('lavender')
@@ -82,20 +86,21 @@ def generate_mean_f1_score_plot(neural_net: FCNN, ax: plt.axes):
     f1_train_np = np.array(neural_net.f1_score_hist)
     f1_train_mean = np.mean(f1_train_np, axis=1)
     ax.plot(np.arange(len(f1_train_mean))[f1_train_mean > only_plot_larger_value],
-            f1_train_mean[f1_train_mean > only_plot_larger_value], label='mean f1 train')
+            f1_train_mean[f1_train_mean > only_plot_larger_value], label='train')
 
     f1_val_np = np.array(neural_net.f1_score_val_hist)
     f1_val_mean = np.mean(f1_val_np, axis=1)
     ax.plot(np.arange(len(f1_val_mean))[f1_val_mean > only_plot_larger_value],
-            f1_val_mean[f1_val_mean > only_plot_larger_value], label='mean f1 val')
+            f1_val_mean[f1_val_mean > only_plot_larger_value], label='validation')
+    ax.set_ylim([0.6, 1.02])
 
-    ax.set_title('mean f1_score', fontsize=20)
+    ax.set_title('mean f1_score', fontsize=40, pad=35)
 
-    ax.set_xlabel('epochs', fontsize=20)
-    ax.set_ylabel('f1_score', fontsize=20)
-    ax.legend(loc='lower right', fontsize=20)
+    ax.set_xlabel('epochs', fontsize=30, labelpad=30)
+    ax.set_ylabel('f1_score', fontsize=30, labelpad=30)
+    ax.legend(loc='lower right', fontsize=25)
 
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=25)
     ax.grid()
 
     ax.set_facecolor('lavender')
@@ -125,9 +130,9 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
     # TODO: figsize doesnt change anything if changed, fig is humongous
     fig, axs = plt.subplots(2, 4, figsize=(60, 40))
     generate_confusion_plot(
-        h_train, y_train, ax=axs[0, 0], title='confusion_matrix_train')
+        h_train, y_train, ax=axs[0, 0], title='normalized confusion matrix on train data')
     generate_confusion_plot(
-        h_val, y_val, ax=axs[1, 0], title='confusion_matrix_val')
+        h_val, y_val, ax=axs[1, 0], title='normalized confusion matrix on validation data')
 
     generate_loss_plot(neural_net, ax=axs[1, 1])
 
@@ -147,7 +152,7 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
         fig.savefig(save_plot_path, facecolor=fig.get_facecolor(),
                     edgecolor='none')
     else:
-        fig.show()
+        plt.show()
 
     plt.close(fig)
 
@@ -316,11 +321,15 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
     fig.savefig(run_folder_paths[0] / 'overview_plot.png')
 
 
-def test_eval(X_test, y_test):
-    neural_net = FCNN.load_run(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_0_110-30-30-15-4'))
+def test_eval(test_folder_path):
+    neural_net = FCNN.load_run(Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4'))
+    X_test, y_test = generate_dataset(test_folder_path, neural_net.scaler, select_mandatory_label=True)
     neural_net.forward_prop(X_test)
     h_test = neural_net.O[-1].T
     confusion_matrix_wrapper(h_test, y_test)
+    calc_metrics(h_test, y_test)
+
+
 
 
 def evaluate_runs(runs_folder_path: Path):
@@ -346,41 +355,44 @@ def evaluate_runs(runs_folder_path: Path):
     pca.save(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
 
 
-    # random_search_multipro(X_train, y_train, X_val, y_val, scaler, Path(r'..\..\saved_runs\jonas_final_gross_2'),
-    #     author='Jonas', description='window10_all, ohne Nina, second big run')
+    
 
-    # train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
-    # val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
 
-    # X_train, y_train, scaler, pca = generate_pca_dataset(train_folder_path, select_mandatory_label=False, keep_percentage=99)
-    # X_val, y_val = generate_pca_dataset(val_folder_path, scaler, select_mandatory_label=False, pca=pca)
+def get_small_net_and_data():
+    train_folder_path = Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test\mandatory_data')
+    val_folder_path = Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test\mandatory_data')
+    
+    neural_net = FCNN.load_run(Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4'))
+    X_train, y_train = generate_dataset(train_folder_path, neural_net.scaler, select_mandatory_label=True)
+    X_val, y_val = generate_dataset(val_folder_path, neural_net.scaler, select_mandatory_label=True)
+    return neural_net, X_train, y_train, X_val, y_val
 
-    # for meta_json_path in runs_folder_path.glob(r'**/*_meta.json'):
-    #     neural_net = FCNN.load_run(meta_json_path.parent)
-    #     save_path = meta_json_path.parent / \
-    #         (str(meta_json_path.parent.parent.name) + "_eval_plot.png")
-    #     generate_evaluation_plot(
-    #         neural_net, X_train, y_train, X_val, y_val, save_plot_path=save_path)
-    #     print('saving', save_path)
+
+def get_large_net_and_data():
+    train_folder_path = Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test')
+    val_folder_path = Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test')
+    
+    neural_net = FCNN.load_run(Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\saved_runs\SS22\grosses_net_original\relu,ep=700,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-40-40-30-20-11'))
+    X_train, y_train = generate_dataset(train_folder_path, neural_net.scaler, select_mandatory_label=False)
+    X_val, y_val = generate_dataset(val_folder_path, neural_net.scaler, select_mandatory_label=False)
+    return neural_net, X_train, y_train, X_val, y_val
+
+def test_generate_evaluation_plot():
+    neural_net, X_train, y_train, X_val, y_val = get_large_net_and_data()
+
+    generate_evaluation_plot(neural_net, X_train, y_train, X_val, y_val, Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src\evaluation\test_plot.png'))
+    print('done')
+
+
+def test_test_eval():
+    test_folder_path = Path(r'C:\Users\hornh\user_root\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test\mandatory_data')
+    X_test, y_test, _ = generate_dataset(test_folder_path, select_mandatory_label=True)
+    # NOTE: this rescales the data according to the test set, which is not what you want to do, you should use the scaler of the loaded net
+
+    test_eval(test_folder_path)
+
 
 
 if __name__ == '__main__':
-    # C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second\leaky_relu,ep=80,bs=256,lr=0.001155,wd=0.004965
-    # C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_random_1\arch1_ep=80\cumsum_every_second\sigmoid,ep=80,bs=256,lr=0.001171,wd=0\2022-03-28_0_64-40-40-30-20-10-11
-    # evaluate_runs(Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\jonas_klein_pca'))
-    # generate_mean_f1_overview_plot(
-    #     run_folder_paths=[
-    #         Path(r'C:\Users\Jochen\Jonas\ML\ml_dev_repo\saved_runs\activation_func_plot')],
-    #     preproc_params_list=[{'window_size': 6, 'pattern': 'every'}]
-    # )
-
-
-    train_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\train')
-    val_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\validation')
-    test_folder_path = Path(r'../../data\preprocessed_frames\new_window=10,cumsum=all\test')
-
-    X_train, y_train, scaler = generate_dataset(train_folder_path, select_mandatory_label=True)
-    # X_val, y_val = generate_dataset(val_folder_path, scaler, select_mandatory_label=False)
-    X_test, y_test = generate_dataset(test_folder_path, scaler, select_mandatory_label=True)
-
-    test_eval(X_test, y_test)
+    test_generate_evaluation_plot()
+    
