@@ -1,6 +1,7 @@
 from __future__ import annotations
 import sys
-sys.path.append(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\src')
+import os
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
 from evaluation.metrics import calc_metrics
 sys.path.append('neural_net_pack')
 sys.path.append('../../neural_net_pack')
@@ -160,9 +161,9 @@ def generate_evaluation_plot(neural_net: FCNN, X_train, y_train, X_val, y_val, s
 
 
 def confusion_matrix_wrapper(h_test, y_test):
-    fig, ax = plt.subplots(figsize=(20, 10))
+    fig, ax = plt.subplots(figsize=(20, 14))
     generate_confusion_plot(
-        h_test, y_test, ax=ax, title='confusion_matrix_test')
+        h_test, y_test, ax=ax, title='confusion matrix on test data')
     fig.savefig('test_confusion')
 
 
@@ -321,13 +322,21 @@ def generate_mean_f1_overview_plot(run_folder_paths: List[Path], preproc_params_
     fig.savefig(run_folder_paths[0] / 'overview_plot.png')
 
 
-def test_eval(test_folder_path):
-    neural_net = FCNN.load_run(Path(r'C:\Users\Sepp\Jonas\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4'))
-    X_test, y_test = generate_dataset(test_folder_path, neural_net.scaler, select_mandatory_label=True)
+def test_eval(net_str: str = 'small'):
+    if net_str == 'small':
+        test_folder_path = Path(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', r'data\preprocessed_frames\SS22\window=10,cumsum=all_original\test\mandatory_data'))
+        net_folder_path = Path(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', r'saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4'))
+        neural_net = FCNN.load_run(net_folder_path)
+        X_test, y_test = generate_dataset(test_folder_path, neural_net.scaler, select_mandatory_label=True)
+    elif net_str == 'large':
+        test_folder_path = Path(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', r'data\preprocessed_frames\SS22\window=10,cumsum=all_original\test'))
+        net_folder_path = Path(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', r'saved_runs\SS22\grosses_net_original\relu,ep=700,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-40-40-30-20-11'))
+        neural_net = FCNN.load_run(net_folder_path)
+        X_test, y_test = generate_dataset(test_folder_path, neural_net.scaler, select_mandatory_label=False)
     neural_net.forward_prop(X_test)
     h_test = neural_net.O[-1].T
     confusion_matrix_wrapper(h_test, y_test)
-    calc_metrics(h_test, y_test)
+    # calc_metrics(h_test, y_test)
 
 
 
@@ -384,15 +393,9 @@ def test_generate_evaluation_plot():
     print('done')
 
 
-def test_test_eval():
-    test_folder_path = Path(r'C:\Users\hornh\user_root\Dokumente\Uni\Info\MachineLearning\project_dev_repo\ml_dev_repo\data\preprocessed_frames\SS22\window=10,cumsum=all_original\test\mandatory_data')
-    X_test, y_test, _ = generate_dataset(test_folder_path, select_mandatory_label=True)
-    # NOTE: this rescales the data according to the test set, which is not what you want to do, you should use the scaler of the loaded net
-
-    test_eval(test_folder_path)
-
-
 
 if __name__ == '__main__':
-    test_generate_evaluation_plot()
+    # test_generate_evaluation_plot()
+    
+    test_eval('large')
     
