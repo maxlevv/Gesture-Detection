@@ -6,12 +6,12 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-preproc_file_path = Path('../../data/preprocessed_frames/final/train/mandatory_data/02-24_jonas_swipe_left_train_preproc.csv')
+preproc_file_path = Path(r'data\preprocessed_frames\final\train\mandatory_data\02-24_jonas_swipe_left_train_preproc.csv')
 df = pd.read_csv(preproc_file_path, delimiter=' *,', engine='python')
 print(df.columns)
 
-#fig, axs = plt.subplots(6, 1, figsize=(80, 50))
-fig, ax = plt.subplots(figsize=(18, 5))
+# fig, axs = plt.subplots(6, 1, figsize=(80, 50))
+fig, ax = plt.subplots(figsize=(100, 100))
 #for i in range(6):
 #    axs[i].step(df.index[i*200:i*200 + 200], df.loc[i*200:i*200 + 200-1, 'right_wrist_x'], where='mid', color='blue')
 #    #axs[i].step(df.index[i*200:i*200 + 200], df.loc[i*200:i*200 + 200-1, 'right_wrist_y'], where='mid', color='green')
@@ -26,10 +26,10 @@ ax.plot(df.index[60:60 + 180], df.loc[60:60 + 180-1, 'gt_r'])
 
 ax.set_xlabel("Nummer des Frames", fontsize=30, labelpad=30)
 ax.set_ylabel("Kumulative Summe", fontsize=30, labelpad=30)
-ax.set_title("Kumulative Summe der Zwischen-Frame-Differenzen ausgewählter Features für die Geste Swipe-Left", fontsize=40, pad=35)
+ax.set_title("Kumulative Summe der Zwischen-Frame-Differenzen \nausgewählter Features für die Geste Swipe-Left", fontsize=40, pad=35)
 
 ax.legend(loc='best', fontsize=25)
 ax.tick_params(axis='both', which='major', labelsize=25)
 
-plt.show()
+# plt.show()
 fig.savefig('nina_new_praesi_plot.png')
