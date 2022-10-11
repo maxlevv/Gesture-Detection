@@ -16,7 +16,7 @@ from helper import softmax2one_hot
 class PredictionHandler():
 
     def __init__(self, network: FCNN, preproc_params: Preprocessing_parameters, observation_window: int = 30,
-                 emitting_number: int = 5, set_no_consider: int = 10, labels=LabelsOptional, test_mode:bool =False, pca:PCA =None):
+                 emitting_number: int = 5, set_no_consider: int = 25, labels=LabelsOptional, test_mode:bool =False, pca:PCA =None):
         self.network = network
         self.preproc_params = preproc_params
         self.labels = labels
@@ -26,12 +26,13 @@ class PredictionHandler():
         self.iterated = [None] * observation_window
         self.prediction = None
         self.events = None
-        self.rotate_emitting_number = 8
         if test_mode:
-            self.swipe_emitting_number = 3
+            self.swipe_emitting_number = 3  # safe
+            self.rotate_emitting_number = 7  # safe
         else:
-            self.swipe_emitting_number = emitting_number
-        
+            self.swipe_emitting_number = 7  # safe
+            self.rotate_emitting_number = 10  # safe
+
         self.timestamp_for_events = None
         self.pca = pca
 
@@ -156,7 +157,7 @@ def create_PredictionHandler_for_live():
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     network_path = Path(
-        '../../saved_runs/jonas_final_gross/relu,ep=700,bs=512,lr=0.000875,wd=0/2022-03-31_2_110-40-40-30-20-11')
+        r'..\..\saved_runs\SS22\grosses_net_original\relu,ep=700,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-40-40-30-20-11')
 
     network = FCNN.load_run(network_path)
 
@@ -179,14 +180,9 @@ def create_PredictionHandler_for_test():
         num_shifts=1, num_timesteps=10,
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-30-30-4')
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_1000epochs\relu,ep=1000,bs=512,lr=0.000875,wd=0\2022-04-01_2_110-30-30-15-4')
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_0_110-30-30-15-4')
-    
+    network_path = Path(r'..\..\saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4')
 
     network = FCNN.load_run(network_path)
-
-    # pca = PCA.load(r'..\..\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
 
     pred_handler = PredictionHandler(network, preproc_params, test_mode=True)
 
