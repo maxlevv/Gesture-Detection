@@ -102,17 +102,20 @@ class PredictionHandler():
         # alle timestamp nuller
         frames_zero_timestamp = frames[frames['timestamp'] == 0].copy()
 
-        # falls der erste timestamp nuller auch index 0 hat, dann soll dieser ausgelassen werden
-        if frames_zero_timestamp.iloc[0]['timestamp'] == 0:
-            frames_zero_timestamp = frames_zero_timestamp[1:]
+        if not frames_zero_timestamp.empty:
 
-        # den nullern idle zuweisen
-        frames_zero_timestamp.loc[:, 'events'] = 'idle'
+            # falls der erste timestamp nuller auch index 0 hat, dann soll dieser ausgelassen werden
+            if frames_zero_timestamp.iloc[0]['timestamp'] == 0:
+                frames_zero_timestamp = frames_zero_timestamp[1:]
 
-        # nicht nuller bestimmen
-        frames_none_zero_timestamp = frames.loc[:
-                                                frames_zero_timestamp.index[0] - 1]
+            # den nullern idle zuweisen
+            frames_zero_timestamp.loc[:, 'events'] = 'idle'
 
+            # nicht nuller bestimmen
+            frames_none_zero_timestamp = frames.loc[:
+                                                    frames_zero_timestamp.index[0] - 1]
+        else:
+            frames_none_zero_timestamp = frames
         frames_none_zero_timestamp.loc[:, 'events'] = 'idle'
 
         # looking vor non idle events and putting them in the frames df at the next largest timestamp
@@ -132,8 +135,11 @@ class PredictionHandler():
                         'there was no timestamp larger then the one given in events_df for a non idle event!!!!!!!!!!')
 
         # combine both back together
-        frames_res = pd.concat([frames_none_zero_timestamp[[
-                               'timestamp', 'events']], frames_zero_timestamp[['timestamp', 'events']]], axis=0)
+        if not frames_zero_timestamp.empty:
+            frames_res = pd.concat([frames_none_zero_timestamp[[
+                                   'timestamp', 'events']], frames_zero_timestamp[['timestamp', 'events']]], axis=0)
+        else:
+            frames_res = frames_none_zero_timestamp[['timestamp', 'events']]
 
         frames.set_index('timestamp', inplace=True)
         frames["events"] = list(frames_res['events'])
