@@ -16,7 +16,7 @@ from helper import softmax2one_hot
 class PredictionHandler():
 
     def __init__(self, network: FCNN, preproc_params: Preprocessing_parameters, observation_window: int = 30,
-                 emitting_number: int = 5, set_no_consider: int = 10, labels=LabelsOptional, test_mode:bool =False, pca:PCA =None):
+                 emitting_number: int = 5, set_no_consider: int = 25, labels=LabelsOptional, test_mode:bool =False, pca:PCA =None):
         self.network = network
         self.preproc_params = preproc_params
         self.labels = labels
@@ -26,12 +26,13 @@ class PredictionHandler():
         self.iterated = [None] * observation_window
         self.prediction = None
         self.events = None
-        self.rotate_emitting_number = 8
         if test_mode:
-            self.swipe_emitting_number = 3
+            self.swipe_emitting_number = 3  # safe
+            self.rotate_emitting_number = 7  # safe
         else:
-            self.swipe_emitting_number = emitting_number
-        
+            self.swipe_emitting_number = 7  # safe
+            self.rotate_emitting_number = 10  # safe
+
         self.timestamp_for_events = None
         self.pca = pca
 
@@ -101,17 +102,20 @@ class PredictionHandler():
         # alle timestamp nuller
         frames_zero_timestamp = frames[frames['timestamp'] == 0].copy()
 
-        # falls der erste timestamp nuller auch index 0 hat, dann soll dieser ausgelassen werden
-        if frames_zero_timestamp.iloc[0]['timestamp'] == 0:
-            frames_zero_timestamp = frames_zero_timestamp[1:]
+        if not frames_zero_timestamp.empty:
 
-        # den nullern idle zuweisen
-        frames_zero_timestamp.loc[:, 'events'] = 'idle'
+            # falls der erste timestamp nuller auch index 0 hat, dann soll dieser ausgelassen werden
+            if frames_zero_timestamp.iloc[0]['timestamp'] == 0:
+                frames_zero_timestamp = frames_zero_timestamp[1:]
 
-        # nicht nuller bestimmen
-        frames_none_zero_timestamp = frames.loc[:
-                                                frames_zero_timestamp.index[0] - 1]
+            # den nullern idle zuweisen
+            frames_zero_timestamp.loc[:, 'events'] = 'idle'
 
+            # nicht nuller bestimmen
+            frames_none_zero_timestamp = frames.loc[:
+                                                    frames_zero_timestamp.index[0] - 1]
+        else:
+            frames_none_zero_timestamp = frames
         frames_none_zero_timestamp.loc[:, 'events'] = 'idle'
 
         # looking vor non idle events and putting them in the frames df at the next largest timestamp
@@ -131,8 +135,11 @@ class PredictionHandler():
                         'there was no timestamp larger then the one given in events_df for a non idle event!!!!!!!!!!')
 
         # combine both back together
-        frames_res = pd.concat([frames_none_zero_timestamp[[
-                               'timestamp', 'events']], frames_zero_timestamp[['timestamp', 'events']]], axis=0)
+        if not frames_zero_timestamp.empty:
+            frames_res = pd.concat([frames_none_zero_timestamp[[
+                                   'timestamp', 'events']], frames_zero_timestamp[['timestamp', 'events']]], axis=0)
+        else:
+            frames_res = frames_none_zero_timestamp[['timestamp', 'events']]
 
         frames.set_index('timestamp', inplace=True)
         frames["events"] = list(frames_res['events'])
@@ -156,7 +163,7 @@ def create_PredictionHandler_for_live():
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
     network_path = Path(
-        '../../saved_runs/jonas_final_gross/relu,ep=700,bs=512,lr=0.000875,wd=0/2022-03-31_2_110-40-40-30-20-11')
+        r'..\..\saved_runs\SS22\grosses_net_original\relu,ep=700,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-40-40-30-20-11')
 
     network = FCNN.load_run(network_path)
 
@@ -179,14 +186,9 @@ def create_PredictionHandler_for_test():
         num_shifts=1, num_timesteps=10,
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_2_110-30-30-4')
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_1000epochs\relu,ep=1000,bs=512,lr=0.000875,wd=0\2022-04-01_2_110-30-30-15-4')
-    network_path = Path(r'..\..\saved_runs\kleines_netz,new_window=10,pattern=all_600epochs\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-03-31_0_110-30-30-15-4')
-    
+    network_path = Path(r'..\..\saved_runs\SS22\kleines_net_original\relu,ep=600,bs=512,lr=0.000875,wd=0\2022-10-06_0_110-30-30-15-4')
 
     network = FCNN.load_run(network_path)
-
-    # pca = PCA.load(r'..\..\data\preprocessed_frames\new_window=10,cumsum=all\pca_mandatory.json')
 
     pred_handler = PredictionHandler(network, preproc_params, test_mode=True)
 
