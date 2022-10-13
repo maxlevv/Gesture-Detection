@@ -117,7 +117,7 @@ def live_events(slideshow_event_queue):
     relevant_signals_dict_yaml_path = Path(
         r'../../src\preprocessing\relevant_keypoint_mapping.yml')
     window_size = 10
-    flip_bool = False
+    flip_bool = True
 
     # init queues
     frames_queue = multiprocessing.Queue()
