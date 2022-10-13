@@ -34,9 +34,6 @@ def generate_confusion_plot(h: np.array, y: np.array, ax: plt.axes = None, title
                           Labels_Mandatory_Optional=Labels)
 
 
-
-
-
 def plot_confusion_matrix(confusion_matrix: np.array, Labels_Mandatory_Optional, fig: plt.figure = None, 
                           ax: plt.axes = None, title: str = None, verbose: bool = False) -> plt.figure:
     # fig situation hier is bisschen weird nicht wundern

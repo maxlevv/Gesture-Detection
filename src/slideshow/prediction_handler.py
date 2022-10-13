@@ -158,7 +158,6 @@ def create_PredictionHandler_for_live():
     mediapipe_columns_for_sum = mediapipe_colums_for_diff
 
     preproc_params = Preprocessing_parameters(
-        # difference_mode='one', mediapipe_columns_for_diff= mediapipe_colums_for_diff,
         num_shifts=1, num_timesteps=10,
         summands_pattern=[1, 1, 1, 1, 1, 1, 1, 1, 1], mediapipe_columns_for_sum=mediapipe_columns_for_sum)
 

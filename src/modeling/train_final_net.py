@@ -1,7 +1,6 @@
 import sys, os
 sys.path.append('neural_net_pack')
 sys.path.append('../../neural_net_pack')
-sys.path.append(os.path.join(sys.path[0], '..'))
 import numpy as np
 from pathlib import Path
 from grid_search import generate_dataset
